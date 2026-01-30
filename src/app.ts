@@ -7,6 +7,7 @@ import { cardRoutes } from "./modules/cards/card.routes";
 import { publicCardRoutes } from "./modules/publicCard/publicCard.routes";
 import { scanRoutes } from "./modules/analytics/scan.routes";
 import { contactRoutes } from "./modules/contacts/contacts.routes";
+import { uploadRoutes } from "./modules/upload/upload.routes";
 import { notFoundRoute } from "./middlewere/notFoundRoute";
 import { globalErrorHandler } from "./middlewere/globalErrorHandler";
 import morgan from "morgan";
@@ -30,6 +31,7 @@ const allowedOrigins = [
   'exp://10.153.79.18:8081',   // ← Expo dev server
   'http://10.153.79.18:8081',  // ← Alternative Expo URL
   // পুরানো IPs (optional, remove করতে পারেন)
+   'https://ladies-sunset-bra-opportunities.trycloudflare.com', // ← এখানে আপনার tunnel URL দিন
   'http://10.108.105.18:3004',
   'http://10.102.144.18:3004',
   // Vercel production URL (will be set via env)
@@ -74,6 +76,7 @@ app.use("/api/card", requireAuth, cardRoutes);
 app.use("/api/public-card", publicCardRoutes);
 app.use("/api/scan", scanRoutes);
 app.use("/api/contacts", requireAuth, contactRoutes);
+app.use("/api/upload", requireAuth, uploadRoutes);
 
 app.use(notFoundRoute);
 app.use(globalErrorHandler);

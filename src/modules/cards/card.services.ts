@@ -246,6 +246,23 @@ const updateCard = async (
 
 
 
+// Get card by ID (helper for image deletion)
+const getCardById = async (cardId: string, userId: string) => {
+    const card = await prisma.card.findFirst({
+        where: { id: cardId, userId },
+        include: {
+            personalInfo: true,
+            socialLinks: true,
+        },
+    });
+    
+    if (!card) {
+        throw new Error("Card not found or unauthorized");
+    }
+    
+    return card;
+};
+
 // delete card 
 const deleteCard = async (cardId: string, userId: string) => {
     if (!cardId || !userId) {
@@ -272,5 +289,6 @@ export const cardServices = {
     createCard,
     getAllCard,
     updateCard,
-    deleteCard
+    deleteCard,
+    getCardById
 }

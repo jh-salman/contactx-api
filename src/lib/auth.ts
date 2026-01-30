@@ -22,6 +22,8 @@ const getTrustedOrigins = (): string[] => {
             "http://localhost:3004",
             "http://127.0.0.1:3004",
             "http://10.26.38.18:3004", // Mobile app origin (update IP if it changes)
+            "https://hwy-editorial-updates-talked.trycloudflare.com", // Cloudflare tunnel
+            "https://seems-alive-launch-review.trycloudflare.com", // Expo tunnel
             // Add Vercel URL if available
             process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
             process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : null,
@@ -43,6 +45,10 @@ const getBaseURL = (): string => {
     if (process.env.BETTER_AUTH_URL) {
         return process.env.BETTER_AUTH_URL;
     }
+    // Use tunnel URL if available (for Cloudflare tunnel)
+    if (process.env.CLOUDFLARE_TUNNEL_URL) {
+        return process.env.CLOUDFLARE_TUNNEL_URL;
+    }
     // Vercel URL (with https:// prefix)
     if (process.env.VERCEL_URL) {
         return `https://${process.env.VERCEL_URL}`;
@@ -50,31 +56,35 @@ const getBaseURL = (): string => {
     if (process.env.NEXT_PUBLIC_VERCEL_URL) {
         return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
     }
-    return 'http://localhost:3004';
+    // Default to tunnel URL for development
+    return 'https://hwy-editorial-updates-talked.trycloudflare.com';
 };
 
 // Initialize Better Auth with error handling
 let auth: ReturnType<typeof betterAuth>;
 
 try {
+    const baseURL = getBaseURL();
+    console.log('🔗 Better Auth Base URL:', baseURL);
+    
     auth = betterAuth({
-        trustedOrigins: trustedOriginsList,
-        baseURL: getBaseURL(),
-        database: prismaAdapter(prisma, {
-            provider: "postgresql",
-        }),
-        plugins: [
-            phoneNumber({
-                sendOTP: ({ phoneNumber, code }, ctx) => {
-                    console.log("otp ", code)
-                },
-                signUpOnVerification: {
-                    getTempEmail: (phone) => `${phone}@temp.yoursite.com`,
-                    getTempName: (phone) => `User_${phone}`
-                }
-            })
-        ]
-    });
+    trustedOrigins: trustedOriginsList,
+    baseURL: baseURL,
+    database: prismaAdapter(prisma, {
+        provider: "postgresql",
+    }),
+    plugins: [
+        phoneNumber({
+            sendOTP: ({ phoneNumber, code }, ctx) => {
+                console.log("otp ", code)
+            },
+            signUpOnVerification: {
+                getTempEmail: (phone) => `${phone}@temp.yoursite.com`,
+                getTempName: (phone) => `User_${phone}`
+            }
+        })
+    ]
+});
 } catch (error) {
     console.error('❌ Failed to initialize Better Auth:', error);
     throw new Error(

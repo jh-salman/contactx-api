@@ -19,8 +19,8 @@ let prisma: PrismaClient;
 try {
   adapter = new PrismaPg({ connectionString });
   prisma = new PrismaClient({ adapter });
-  
-  // Handle Prisma connection cleanup for serverless environments
+
+// Handle Prisma connection cleanup for serverless environments
   // In serverless environments, connections are reused across invocations
   // No need to disconnect on each request - Vercel handles connection pooling
 } catch (error) {
