@@ -53,21 +53,34 @@ const getBaseURL = (): string => {
     return 'http://localhost:3004';
 };
 
-export const auth = betterAuth({
-    trustedOrigins: trustedOriginsList,
-    baseURL: getBaseURL(),
-    database: prismaAdapter(prisma, {
-        provider: "postgresql",
-    }),
-    plugins: [
-        phoneNumber({
-            sendOTP: ({ phoneNumber, code }, ctx) => {
-                console.log("otp ", code)
-            },
-            signUpOnVerification: {
-                getTempEmail: (phone) => `${phone}@temp.yoursite.com`,
-                getTempName: (phone) => `User_${phone}`
-            }
-        })
-    ]
-});
+// Initialize Better Auth with error handling
+let auth: ReturnType<typeof betterAuth>;
+
+try {
+    auth = betterAuth({
+        trustedOrigins: trustedOriginsList,
+        baseURL: getBaseURL(),
+        database: prismaAdapter(prisma, {
+            provider: "postgresql",
+        }),
+        plugins: [
+            phoneNumber({
+                sendOTP: ({ phoneNumber, code }, ctx) => {
+                    console.log("otp ", code)
+                },
+                signUpOnVerification: {
+                    getTempEmail: (phone) => `${phone}@temp.yoursite.com`,
+                    getTempName: (phone) => `User_${phone}`
+                }
+            })
+        ]
+    });
+} catch (error) {
+    console.error('❌ Failed to initialize Better Auth:', error);
+    throw new Error(
+        `Better Auth initialization failed: ${error instanceof Error ? error.message : String(error)}. ` +
+        'Please check your DATABASE_URL and BETTER_AUTH_SECRET environment variables.'
+    );
+}
+
+export { auth };

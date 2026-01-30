@@ -24,9 +24,14 @@ if (process.env.NODE_ENV !== 'production') {
 
 // CORS Configuration - supports both development and production
 const allowedOrigins = [
-  "http://localhost:3004",
-  "http://localhost:3000",
-  "http://localhost:8081",
+  'http://localhost:3004',
+  'http://127.0.0.1:3004',
+  'http://10.153.79.18:3004',  // ← নতুন Mac IP
+  'exp://10.153.79.18:8081',   // ← Expo dev server
+  'http://10.153.79.18:8081',  // ← Alternative Expo URL
+  // পুরানো IPs (optional, remove করতে পারেন)
+  'http://10.108.105.18:3004',
+  'http://10.102.144.18:3004',
   // Vercel production URL (will be set via env)
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
   process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : null,
@@ -46,7 +51,9 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'X-Origin', 'X-Requested-Origin', 'X-Forwarded-Origin', 'Referer', 'X-Timezone'],
 }));
 
 app.all("/api/auth/*splat", toNodeHandler(auth));

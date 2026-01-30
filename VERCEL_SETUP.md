@@ -71,3 +71,4 @@
 - Prisma: Connection pooling automatically handled
 - Environment variables: Automatically available in Vercel
 
+
