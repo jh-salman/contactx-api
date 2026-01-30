@@ -30,8 +30,12 @@ const allowedOrigins = [
   'http://10.153.79.18:3004',  // ← নতুন Mac IP
   'exp://10.153.79.18:8081',   // ← Expo dev server
   'http://10.153.79.18:8081',  // ← Alternative Expo URL
-  // পুরানো IPs (optional, remove করতে পারেন)
-   'https://ladies-sunset-bra-opportunities.trycloudflare.com', // ← এখানে আপনার tunnel URL দিন
+  // Cloudflare tunnel URLs
+  'https://hwy-editorial-updates-talked.trycloudflare.com', // ← API Server tunnel
+  'https://seems-alive-launch-review.trycloudflare.com', // ← Expo app tunnel
+  'https://ladies-sunset-bra-opportunities.trycloudflare.com', // ← পুরানো tunnel
+  // Vercel production URL
+  'https://contactx-api-git-main-jhsalmans-projects.vercel.app', // ← Production Vercel URL
   'http://10.108.105.18:3004',
   'http://10.102.144.18:3004',
   // Vercel production URL (will be set via env)
