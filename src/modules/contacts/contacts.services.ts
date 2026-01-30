@@ -274,7 +274,7 @@ const requestContactPermission = async (
     // 3️⃣ Check if already requested
     const existingRequest = await prisma.contactRequest.findFirst({
         where: {
-            requesterId,
+            requestedBy: requesterId,
             cardId,
             status: "pending",
         },
@@ -287,7 +287,7 @@ const requestContactPermission = async (
     // 4️⃣ Check if already approved and contact exists
     const approvedRequest = await prisma.contactRequest.findFirst({
         where: {
-            requesterId,
+            requestedBy: requesterId,
             cardId,
             status: "approved",
         },
@@ -310,14 +310,14 @@ const requestContactPermission = async (
     // 5️⃣ Create permission request
     const request = await prisma.contactRequest.create({
         data: {
-            requesterId,
+            requestedBy: requesterId,
             cardId,
-            cardOwnerId: card.userId,
+            requestedTo: card.userId,
             message: message || null,
             status: "pending",
         },
         include: {
-            requester: {
+            requestedByUser: {
                 select: { id: true, name: true, email: true, image: true },
             },
             card: {
@@ -341,11 +341,11 @@ const getReceivedRequests = async (userId: string) => {
 
     const requests = await prisma.contactRequest.findMany({
         where: {
-            cardOwnerId: userId,
+            requestedTo: userId,
             status: "pending",
         },
         include: {
-            requester: {
+            requestedByUser: {
                 select: { id: true, name: true, email: true, image: true },
             },
             card: {
@@ -370,7 +370,7 @@ const getSentRequests = async (userId: string) => {
 
     const requests = await prisma.contactRequest.findMany({
         where: {
-            requesterId: userId,
+            requestedBy: userId,
         },
         include: {
             card: {
@@ -378,7 +378,7 @@ const getSentRequests = async (userId: string) => {
                     personalInfo: true,
                 },
             },
-            cardOwner: {
+            requestedToUser: {
                 select: { id: true, name: true, email: true, image: true },
             },
         },
@@ -412,7 +412,7 @@ const approveRequest = async (requestId: string, cardOwnerId: string) => {
     if (!request) throw new Error("Request not found");
 
     // 2️⃣ Check ownership
-    if (request.cardOwnerId !== cardOwnerId) {
+    if (request.requestedTo !== cardOwnerId) {
         throw new Error("Unauthorized - not your request");
     }
 
@@ -436,7 +436,7 @@ const approveRequest = async (requestId: string, cardOwnerId: string) => {
     // Check if contact already exists
     const existingContact = await prisma.contact.findFirst({
         where: {
-            userId: request.requesterId,
+            userId: request.requestedBy,
             cardId: request.cardId,
         },
     });
@@ -463,7 +463,7 @@ const approveRequest = async (requestId: string, cardOwnerId: string) => {
     try {
         // Find all cards owned by the requester (owner)
         const ownerCards = await prisma.card.findMany({
-            where: { userId: request.requesterId },
+            where: { userId: request.requestedBy },
             select: { id: true },
         });
 
@@ -473,7 +473,7 @@ const approveRequest = async (requestId: string, cardOwnerId: string) => {
             const ownerCardIds = ownerCards.map(card => card.id);
             const customerContact = await prisma.contact.findFirst({
                 where: {
-                    userId: request.cardOwnerId, // Customer's userId
+                    userId: request.requestedTo, // Customer's userId
                     cardId: { in: ownerCardIds }, // Owner's card ID
                 },
                 orderBy: { createdAt: "desc" }, // Get the most recent one
@@ -509,7 +509,7 @@ const approveRequest = async (requestId: string, cardOwnerId: string) => {
 
     const contact = await prisma.contact.create({
         data: {
-            userId: request.requesterId, // Owner's ID (who requested)
+            userId: request.requestedBy, // Owner's ID (who requested)
             cardId: request.cardId, // Customer's card
             firstName: personalInfo.firstName || "",
             lastName: personalInfo.lastName || "",
@@ -547,7 +547,7 @@ const rejectRequest = async (requestId: string, cardOwnerId: string) => {
     if (!request) throw new Error("Request not found");
 
     // 2️⃣ Check ownership
-    if (request.cardOwnerId !== cardOwnerId) {
+    if (request.requestedTo !== cardOwnerId) {
         throw new Error("Unauthorized - not your request");
     }
 
@@ -602,7 +602,7 @@ const createReverseContactRequest = async (
     // 4️⃣ Check if already requested
     const existingRequest = await prisma.contactRequest.findFirst({
         where: {
-            requesterId: ownerCard.userId, // Owner requesting
+            requestedBy: ownerCard.userId, // Owner requesting
             cardId: customerCardId, // Customer's card
             status: "pending",
         },
@@ -622,14 +622,14 @@ const createReverseContactRequest = async (
     // FROM owner TO customer
     const request = await prisma.contactRequest.create({
         data: {
-            requesterId: ownerCard.userId, // Owner's userId
+            requestedBy: ownerCard.userId, // Owner's userId
             cardId: customerCardId, // Customer's card ID
-            cardOwnerId: customerCard.userId, // Customer's userId
+            requestedTo: customerCard.userId, // Customer's userId
             message: message || `${ownerName} wants to save your contact info`,
             status: "pending",
         },
         include: {
-            requester: {
+            requestedByUser: {
                 select: { id: true, name: true, email: true, image: true },
             },
             card: {

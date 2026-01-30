@@ -150,11 +150,15 @@ const updateContactController = async (req: Request, res: Response, next: NextFu
             updateData.country = updateData.country || fallback.country;
         }
 
+        if (!userId) {
+            return res.status(401).json({ success: false, message: "Unauthorized" });
+        }
+
         if (!contactId) {
             return res.status(400).json({ success: false, message: "Contact ID is required" });
         }
 
-        const updated = await contactServices.updateContact(contactId, userId, updateData);
+        const updated = await contactServices.updateContact(contactId as string, userId as string, updateData);
 
         res.status(200).json({
             success: true,
@@ -359,7 +363,7 @@ const createReversePermissionRequestController = async (req: Request, res: Respo
             return res.status(400).json({ success: false, message: "Customer card ID is required" });
         }
 
-        const request = await contactServices.createReversePermissionRequest(
+        const request = await contactServices.createReverseContactRequest(
             ownerCardId,
             customerCardId,
             message
