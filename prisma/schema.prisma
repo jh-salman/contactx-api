@@ -1,0 +1,245 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  cards         Card[]
+  contacts      Contact[]
+  ownerShares      VisitorContactShare[] @relation("OwnerShares")
+  visitorShares    VisitorContactShare[] @relation("VisitorShares")
+  sentRequests     ContactRequest[]      @relation("SentRequests")
+  receivedRequests ContactRequest[]      @relation("ReceivedRequests")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  sessions  Session[]
+  accounts  Account[]
+
+  phoneNumber         String?
+  phoneNumberVerified Boolean?
+
+  @@unique([email])
+  @@unique([phoneNumber])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Card {
+  id               String        @id @default(cuid())
+  userId           String
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardTitle        String        @default("ConactX")
+  cardColor        String        @default("black")
+  logo             String?
+  profile          String?
+  cover            String?
+  imagesAndLayouts Json?
+  isFavorite       Boolean       @default(false)
+  personalInfo     PersonalInfo?
+  socialLinks      socialLinks?
+  qrCode           String?
+  qrImage          String?
+  scan             cardScan[]
+  contacts         Contact[]
+  contactRequests   ContactRequest[]
+  ownerCardShares   VisitorContactShare[] @relation("OwnerCardShares")
+  visitorCardShares VisitorContactShare[] @relation("VisitorCardShares")
+  setting          Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("cards")
+}
+
+model PersonalInfo {
+  id          String  @id @default(cuid())
+  cardId      String  @unique
+  card        Card    @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  firstName   String?
+  lastName    String?
+  jobTitle    String?
+  phoneNumber String  @unique
+  email       String? @unique
+  company     String?
+  image       String?
+  logo        String?
+  note        String?
+  banner      String?
+  profile_img String?
+
+  @@index([cardId])
+  @@map("personal_info")
+}
+
+model socialLinks {
+  id     String @id @default(cuid())
+  cardId String @unique
+  card   Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  links  Json[]
+
+  @@index([cardId])
+  @@map("social_links")
+}
+
+model cardScan {
+  id          String  @id @default(cuid())
+  cardId      String
+  card        Card    @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  ip          String?
+  userAgent   String?
+  source      String  @default("qr") // "qr" | "link"
+  latitude    Float?
+  longitude   Float?
+  city        String?
+  country     String?
+  banner      String?
+  profile_img String?
+
+  createdAt DateTime @default(now())
+
+  @@index([cardId])
+  @@map("card_scans")
+}
+
+model Contact {
+  id          String   @id @default(uuid())
+  userId      String
+  cardId      String
+  firstName   String
+  lastName    String
+  phone       String
+  email       String?
+  company     String?
+  jobTitle    String?
+  image       String?
+  logo        String?
+  banner      String?
+  note        String?
+  profile_img String?
+  latitude    Float?
+  longitude   Float?
+  city        String?
+  country     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([cardId])
+  @@map("contacts")
+}
+
+model VisitorContactShare {
+  id            String   @id @default(uuid())
+  ownerCardId   String
+  visitorCardId String
+  ownerId       String
+  visitorId     String
+  status        String   @default("pending_owner_approval") // "pending_owner_approval" | "approved" | "rejected"
+  latitude      Float?
+  longitude     Float?
+  city          String?
+  country       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  ownerCard   Card @relation("OwnerCardShares", fields: [ownerCardId], references: [id], onDelete: Cascade)
+  visitorCard Card @relation("VisitorCardShares", fields: [visitorCardId], references: [id], onDelete: Cascade)
+  owner       User @relation("OwnerShares", fields: [ownerId], references: [id])
+  visitor     User @relation("VisitorShares", fields: [visitorId], references: [id])
+
+  @@index([ownerId])
+  @@index([visitorId])
+  @@index([ownerCardId])
+  @@index([visitorCardId])
+  @@index([status])
+  @@map("visitor_contact_shares")
+}
+
+model ContactRequest {
+  id          String   @id @default(uuid())
+  cardId      String
+  requestedBy String
+  requestedTo String
+  status      String   @default("pending") // "pending" | "approved" | "rejected"
+  message     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  card            Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  requestedByUser User @relation("SentRequests", fields: [requestedBy], references: [id])
+  requestedToUser User @relation("ReceivedRequests", fields: [requestedTo], references: [id])
+
+  @@index([requestedBy])
+  @@index([requestedTo])
+  @@index([cardId])
+  @@index([status])
+  @@map("contact_requests")
+}
