@@ -2,14 +2,14 @@ import express from "express";
 import cors from "cors";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth";
-import { requireAuth } from "./middlewere/requireAuth";
+import { requireAuth } from "./middleware/requireAuth";
 import { cardRoutes } from "./modules/cards/card.routes";
 import { publicCardRoutes } from "./modules/publicCard/publicCard.routes";
 import { scanRoutes } from "./modules/analytics/scan.routes";
 import { contactRoutes } from "./modules/contacts/contacts.routes";
 import { uploadRoutes } from "./modules/upload/upload.routes";
-import { notFoundRoute } from "./middlewere/notFoundRoute";
-import { globalErrorHandler } from "./middlewere/globalErrorHandler";
+import { notFoundRoute } from "./middleware/notFoundRoute";
+import { globalErrorHandler } from "./middleware/globalErrorHandler";
 import morgan from "morgan";
 
 export const app = express();
