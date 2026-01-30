@@ -4,15 +4,6 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 import { phoneNumber } from "better-auth/plugins";
 
-
-
-<<<<<<< HEAD
-// // Parse trusted origins from environment variable or use defaults
-// // Can be comma-separated string or array
-// const getTrustedOrigins = (): string[] => {
-//     const envOrigins = process.env.AUTH_TRUSTED_ORIGINS;
-//     let origins: string[] = [];
-=======
 // Parse trusted origins from environment variable or use defaults
 // Can be comma-separated string or array
 const getTrustedOrigins = (): string[] => {
@@ -44,31 +35,8 @@ const getTrustedOrigins = (): string[] => {
     
     return origins;
 };
->>>>>>> features/scan-contact
 
-//     if (envOrigins) {
-//         // Support both comma-separated string and array format
-//         origins = envOrigins.includes(',') 
-//             ? envOrigins.split(',').map(origin => origin.trim())
-//             : [envOrigins.trim()];
-//     } else {
-//         // Default origins for development - include all possible variations
-//         // If AUTH_TRUSTED_ORIGINS is not set in .env, use these defaults
-//         origins = [
-//             "http://localhost:3000",
-//             "http://localhost:3004",
-//             "http://127.0.0.1:3004",
-//             "http://10.26.38.18:3004", // Mobile app origin (update IP if it changes)
-//         ];
-//     }
-
-//     // Log trusted origins for debugging
-//     console.log('🔐 Better Auth Trusted Origins:', origins);
-
-//     return origins;
-// };
-
-// const trustedOriginsList = getTrustedOrigins();
+const trustedOriginsList = getTrustedOrigins();
 
 // Get base URL for Better Auth
 const getBaseURL = (): string => {
@@ -86,15 +54,8 @@ const getBaseURL = (): string => {
 };
 
 export const auth = betterAuth({
-<<<<<<< HEAD
-    trustedOrigins: [
-        'http://localhost:3004',
-        'http://10.23.61.18:3004',  // ✅ New IP
-    ],
-=======
     trustedOrigins: trustedOriginsList,
     baseURL: getBaseURL(),
->>>>>>> features/scan-contact
     database: prismaAdapter(prisma, {
         provider: "postgresql",
     }),

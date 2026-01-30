@@ -8,17 +8,19 @@ import { publicCardRoutes } from "./modules/publicCard/publicCard.routes";
 import { scanRoutes } from "./modules/analytics/scan.routes";
 import { contactRoutes } from "./modules/contacts/contacts.routes";
 import { notFoundRoute } from "./middlewere/notFoundRoute";
-<<<<<<< HEAD
-import morgan from "morgan";
-=======
 import { globalErrorHandler } from "./middlewere/globalErrorHandler";
->>>>>>> features/scan-contact
+import morgan from "morgan";
 
 export const app = express();
 
 // Increase JSON payload limit for Vercel
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Only use morgan in development (not in production/Vercel)
+if (process.env.NODE_ENV !== 'production') {
+  app.use(morgan("dev"));
+}
 
 // CORS Configuration - supports both development and production
 const allowedOrigins = [
@@ -32,46 +34,6 @@ const allowedOrigins = [
   process.env.EXPO_APP_URL,
 ].filter(Boolean) as string[];
 
-<<<<<<< HEAD
-app.use(morgan("dev"));
-
-
-app.use(cors({
- origin: [
-    'http://localhost:8081', 
-    'exp://10.23.61.18:8081',  // Old IP
-    'exp://10.102.144.18:8081',  // ✅ NEW - Add this
-    'http://10.23.61.18:3004',  // Old IP
-    'http://10.102.144.18:3004',  // ✅ NEW - Add this
-    'http://localhost:3004'
-  ],
-  credentials: true
-}));
-
-
-app.all('/api/auth/*splat', toNodeHandler(auth));
-
-
-app.get("/", (req:Request, res:Response )=>{
-  
-    res.send("Hello world")
-
-})
-
-app.get('/api/protected', requireAuth, (req: Request, res: Response) => {
-    res.json({
-      message: "This is a protected route",
-      user: req.user,
-      session: req.session,
-    });
-  });
-
-app.use("/api/card", requireAuth,cardRoutes);
-
-
-
-// public card routes 
-=======
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, Postman, etc.)
@@ -94,9 +56,12 @@ app.get("/", (_, res) => {
 });
 
 app.get("/api/protected", requireAuth, (req, res) => {
-  res.json({ user: req.user });
+  res.json({
+    message: "This is a protected route",
+    user: req.user,
+    session: req.session,
+  });
 });
->>>>>>> features/scan-contact
 
 app.use("/api/card", requireAuth, cardRoutes);
 app.use("/api/public-card", publicCardRoutes);

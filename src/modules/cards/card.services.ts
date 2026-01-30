@@ -12,9 +12,6 @@ const createCard = async (
     cover?: string,
     imagesAndLayouts?: any,
     isFavorite?: boolean,
-<<<<<<< HEAD
-    personalInfo?: { firstName: string; lastName: string; jobTitle: string, phoneNumber:string } ,
-=======
     personalInfo?: {
         firstName?: string;
         lastName?: string;
@@ -28,7 +25,6 @@ const createCard = async (
         banner?: string;
         profile_img?: string;
     },
->>>>>>> features/scan-contact
     socialLinks?: any[]
 ) => {
     if (!userId) throw new Error("userId is required");

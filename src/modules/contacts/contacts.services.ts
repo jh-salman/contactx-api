@@ -1,11 +1,5 @@
 import { prisma } from "../../lib/prisma";
 
-<<<<<<< HEAD
-// ✅ Step 2: Visitor saves Owner's contact (NO permission needed)
-export const saveContact = async (
-    userId: string, // Visitor's user ID
-    cardId: string, // Owner's card ID
-=======
 // Helper function to validate and normalize email
 const normalizeEmail = (email: string | undefined): string => {
     if (!email) return "";
@@ -31,7 +25,6 @@ const normalizeEmail = (email: string | undefined): string => {
 const saveContact = async (
     userId: string,
     cardId: string,
->>>>>>> features/scan-contact
     data: {
         firstName?: string;
         lastName?: string;
@@ -60,20 +53,6 @@ const saveContact = async (
     // ✅ Visitor can save Owner's contact - no permission check needed
     // Just prevent saving own card
     if (card.userId === userId) throw new Error("You cannot save your own card");
-<<<<<<< HEAD
-    
-    if (!data.phone && !data.email) throw new Error("Phone or email is required to save contact");
-
-    // Fix: Proper OR condition type
-    const orConditions: Array<{ phone: string } | { email: string }> = [];
-    if (data.phone) {
-        orConditions.push({ phone: data.phone });
-    }
-    if (data.email) {
-        orConditions.push({ email: data.email });
-    }
-
-=======
 
     // 4️⃣ Normalize and validate email if provided
     // Only validate email format if phone is not provided (email becomes required)
@@ -96,27 +75,19 @@ const saveContact = async (
     if (!data.phone && !normalizedEmail) throw new Error("Phone or email is required to save contact");
 
     // 6️⃣ Duplicate check (per user) - use normalized email
->>>>>>> features/scan-contact
     const existing = await prisma.contact.findFirst({
         where: {
             userId,
             cardId,
-<<<<<<< HEAD
-            ...(orConditions.length > 0 ? { OR: orConditions } : {}),
-=======
             OR: [
                 data.phone ? { phone: data.phone } : undefined,
                 normalizedEmail ? { email: normalizedEmail } : undefined,
             ].filter(Boolean) as any[],
->>>>>>> features/scan-contact
         },
     });
     if (existing) return { alreadySaved: true, contact: existing };
 
-<<<<<<< HEAD
-=======
     // 7️⃣ Create contact
->>>>>>> features/scan-contact
     const contact = await prisma.contact.create({
         data: {
             userId, // Visitor's user ID
@@ -151,7 +122,7 @@ const saveContact = async (
                 : 'Someone';
 
             // Create reverse request (don't throw error if it fails - just log it)
-            await createReversePermissionRequest(
+            await createReverseContactRequest(
                 cardId, // owner's card ID
                 customerCardId, // customer's card ID
                 `${ownerName} wants to save your contact info`
@@ -206,30 +177,9 @@ export const updateContact = async (
 
     if (!data || Object.keys(data).length === 0) return existing;
 
-    const updateData: {
-        firstName?: string;
-        lastName?: string;
-        phone?: string;
-        email?: string;
-        company?: string;
-        jobTitle?: string;
-        image?: string;
-        logo?: string;
-        banner?: string;
-        note?: string;
-        profile_img?: string;
-        latitude?: number | null;
-        longitude?: number | null;
-        city?: string;
-        country?: string;
-    } = {};
-
-<<<<<<< HEAD
-=======
     // Prepare update data - only include fields that are provided
     const updateData: any = {};
 
->>>>>>> features/scan-contact
     if (data.firstName !== undefined) updateData.firstName = data.firstName;
     if (data.lastName !== undefined) updateData.lastName = data.lastName;
     if (data.phone !== undefined) updateData.phone = data.phone;
@@ -253,15 +203,10 @@ export const updateContact = async (
     if (data.logo !== undefined) updateData.logo = data.logo;
     if (data.note !== undefined) updateData.note = data.note;
     if (data.profile_img !== undefined) updateData.profile_img = data.profile_img;
-<<<<<<< HEAD
-    if (data.latitude !== undefined) updateData.latitude = data.latitude ?? null;
-    if (data.longitude !== undefined) updateData.longitude = data.longitude ?? null;
-=======
 
     // Handle location fields - allow null values
     if (data.latitude !== undefined) updateData.latitude = data.latitude;
     if (data.longitude !== undefined) updateData.longitude = data.longitude;
->>>>>>> features/scan-contact
     if (data.city !== undefined) updateData.city = data.city;
     if (data.country !== undefined) updateData.country = data.country;
 
@@ -296,322 +241,6 @@ export const deleteContact = async (contactId: string, userId: string) => {
     };
 };
 
-<<<<<<< HEAD
-// ✅ Step 4: Visitor shares their contact with Owner
-export const shareVisitorContact = async (
-  visitorUserId: string, // Visitor's user ID
-  ownerCardId: string, // Owner's card that was scanned
-  visitorCardId: string, // Visitor's card to share
-  scanLocation?: {
-    latitude?: number;
-    longitude?: number;
-    city?: string;
-    country?: string;
-  }
-) => {
-  if (!visitorUserId) throw new Error("Unauthorized");
-  if (!ownerCardId || !visitorCardId) {
-    throw new Error("ownerCardId and visitorCardId are required");
-  }
-
-  // Get owner card
-  const ownerCard = await prisma.card.findUnique({
-    where: { id: ownerCardId },
-    include: { 
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          image: true,
-        },
-      },
-    },
-  });
-  if (!ownerCard) throw new Error("Owner card not found");
-  if (!ownerCard.user) throw new Error("Owner not found");
-
-  // Get visitor card
-  const visitorCard = await prisma.card.findUnique({
-    where: { id: visitorCardId },
-    include: { 
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          image: true,
-        },
-      },
-      personalInfo: true,
-      socialLinks: true,
-    },
-  });
-  if (!visitorCard) throw new Error("Visitor card not found");
-  if (!visitorCard.user) throw new Error("Visitor not found");
-
-  // Verify visitor owns the card they're sharing
-  if (visitorCard.userId !== visitorUserId) {
-    throw new Error("Unauthorized: You can only share your own card");
-  }
-
-  // Check if share already exists and pending
-  const existingShare = await prisma.visitorContactShare.findFirst({
-    where: {
-      ownerCardId,
-      visitorCardId,
-      ownerId: ownerCard.userId,
-      status: "pending_owner_approval",
-    },
-  });
-
-  if (existingShare) {
-    throw new Error("Share request already sent and pending");
-  }
-
-  // Create visitor contact share with status "pending_owner_approval"
-  const share = await prisma.visitorContactShare.create({
-    data: {
-      ownerCardId,
-      visitorCardId,
-      ownerId: ownerCard.userId,
-      visitorId: visitorUserId,
-      status: "pending_owner_approval",
-      latitude: scanLocation?.latitude ?? null,
-      longitude: scanLocation?.longitude ?? null,
-      city: scanLocation?.city ?? null,
-      country: scanLocation?.country ?? null,
-    },
-    include: {
-      visitorCard: {
-        include: {
-          personalInfo: true,
-          socialLinks: true,
-        },
-      },
-      ownerCard: {
-        include: {
-          personalInfo: true,
-        },
-      },
-    },
-  });
-
-  return {
-    shareId: share.id,
-    ownerCardId: share.ownerCardId,
-    visitorCardId: share.visitorCardId,
-    status: share.status,
-    visitorCard: share.visitorCard,
-    ownerCard: share.ownerCard,
-    location: {
-      latitude: share.latitude,
-      longitude: share.longitude,
-      city: share.city,
-      country: share.country,
-    },
-    createdAt: share.createdAt,
-  };
-};
-
-// ✅ Step 5: Owner gets pending visitor shares
-export const getPendingVisitorShares = async (ownerUserId: string) => {
-  if (!ownerUserId) throw new Error("userId is required");
-
-  const shares = await prisma.visitorContactShare.findMany({
-    where: {
-      ownerId: ownerUserId,
-      status: "pending_owner_approval",
-    },
-    include: {
-      visitorCard: {
-        include: {
-          personalInfo: true,
-          socialLinks: true,
-        },
-      },
-      visitor: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          image: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-
-  return shares.map((share) => ({
-    id: share.id,
-    ownerCardId: share.ownerCardId,
-    visitorCardId: share.visitorCardId,
-    visitorCard: share.visitorCard,
-    visitor: share.visitor,
-    status: share.status,
-    location: {
-      latitude: share.latitude,
-      longitude: share.longitude,
-      city: share.city,
-      country: share.country,
-    },
-    createdAt: share.createdAt,
-  }));
-};
-
-// ✅ Step 6: Owner approves visitor share
-export const approveVisitorShare = async (shareId: string, ownerUserId: string) => {
-  if (!shareId) throw new Error("shareId is required");
-  if (!ownerUserId) throw new Error("Unauthorized");
-
-  // Find share
-  const share = await prisma.visitorContactShare.findUnique({
-    where: { id: shareId },
-    include: {
-      visitorCard: {
-        include: {
-          personalInfo: true,
-        },
-      },
-    },
-  });
-
-  if (!share) {
-    throw new Error("Share not found");
-  }
-
-  // Verify owner
-  if (share.ownerId !== ownerUserId) {
-    throw new Error("Unauthorized: You can only approve shares sent to you");
-  }
-
-  // Check if already processed
-  if (share.status !== "pending_owner_approval") {
-    throw new Error(`Share already ${share.status}`);
-  }
-
-  // Update share status to "approved"
-  const updatedShare = await prisma.visitorContactShare.update({
-    where: { id: shareId },
-    data: { status: "approved" },
-  });
-
-  // Auto-create contact in owner's contact list
-  // Fix: Handle nullable personalInfo properly
-  const personalInfo = share.visitorCard.personalInfo;
-  if (!personalInfo) {
-    throw new Error("Visitor card personal info not found");
-  }
-
-  const contact = await prisma.contact.create({
-    data: {
-      userId: ownerUserId, // Owner gets visitor's contact
-      cardId: share.visitorCardId, // Visitor's card ID
-      firstName: personalInfo.firstName || "",
-      lastName: personalInfo.lastName || "",
-      phone: personalInfo.phoneNumber || "",
-      email: personalInfo.email || "",
-      company: "", // Not in personalInfo schema
-      jobTitle: personalInfo.jobTitle || "",
-      image: "", // Not in personalInfo schema
-      logo: "", // Not in personalInfo schema
-      banner: "", // Not in personalInfo schema
-      profile_img: "", // Not in personalInfo schema
-      note: "", // Not in personalInfo schema
-      // Use scan location
-      latitude: share.latitude,
-      longitude: share.longitude,
-      city: share.city || "",
-      country: share.country || "",
-    },
-  });
-
-  return {
-    shareId: updatedShare.id,
-    status: updatedShare.status,
-    contact,
-  };
-};
-
-// ✅ Step 6: Owner rejects visitor share
-export const rejectVisitorShare = async (shareId: string, ownerUserId: string) => {
-  if (!shareId) throw new Error("shareId is required");
-  if (!ownerUserId) throw new Error("Unauthorized");
-
-  // Find share
-  const share = await prisma.visitorContactShare.findUnique({
-    where: { id: shareId },
-  });
-
-  if (!share) {
-    throw new Error("Share not found");
-  }
-
-  // Verify owner
-  if (share.ownerId !== ownerUserId) {
-    throw new Error("Unauthorized: You can only reject shares sent to you");
-  }
-
-  // Check if already processed
-  if (share.status !== "pending_owner_approval") {
-    throw new Error(`Share already ${share.status}`);
-  }
-
-  // Update share status to "rejected"
-  const updatedShare = await prisma.visitorContactShare.update({
-    where: { id: shareId },
-    data: { status: "rejected" },
-  });
-
-  return {
-    shareId: updatedShare.id,
-    status: updatedShare.status,
-  };
-};
-
-// Optional: Owner requests Customer's contact permission
-export const requestContactPermission = async (
-    userId: string,
-    cardId: string,
-    message?: string
-) => {
-    if (!userId) throw new Error("Unauthorized");
-    if (!cardId) throw new Error("cardId is required");
-
-    // Check if card exists
-    const card = await prisma.card.findUnique({
-        where: { id: cardId },
-        include: { 
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              image: true,
-            },
-          },
-        },
-    });
-    if (!card) throw new Error("Card not found");
-    if (!card.user) throw new Error("Card owner not found");
-
-    // Prevent owner from requesting own card
-    if (card.userId === userId) {
-        throw new Error("You cannot request permission for your own card");
-    }
-
-    // Get card owner (the person who will receive the request)
-    const cardOwnerId = card.userId;
-
-    // Check if request already exists
-    const existingRequest = await prisma.contactRequest.findFirst({
-        where: {
-            cardId,
-            requestedBy: userId,
-            requestedTo: cardOwnerId,
-=======
 // Permission Request Services (Flow 2)
 const requestContactPermission = async (
     requesterId: string,
@@ -621,9 +250,9 @@ const requestContactPermission = async (
     if (!requesterId) throw new Error("Unauthorized");
     if (!cardId) throw new Error("cardId is required");
 
-    // Check if permissionRequest model is available in Prisma client
-    if (!prisma.permissionRequest) {
-        throw new Error("PermissionRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
+    // Check if contactRequest model is available in Prisma client
+    if (!prisma.contactRequest) {
+        throw new Error("ContactRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
     }
 
     // 1️⃣ Check card exists
@@ -643,11 +272,10 @@ const requestContactPermission = async (
     }
 
     // 3️⃣ Check if already requested
-    const existingRequest = await prisma.permissionRequest.findFirst({
+    const existingRequest = await prisma.contactRequest.findFirst({
         where: {
             requesterId,
             cardId,
->>>>>>> features/scan-contact
             status: "pending",
         },
     });
@@ -656,178 +284,15 @@ const requestContactPermission = async (
         throw new Error("Request already sent and pending");
     }
 
-<<<<<<< HEAD
-    // Create request
-    const request = await prisma.contactRequest.create({
-        data: {
-            cardId,
-            requestedBy: userId, // Owner who wants the contact
-            requestedTo: cardOwnerId, // Customer who owns the card
-            status: "pending",
-            message: message || null,
-        },
-        include: {
-            card: {
-                include: {
-                    personalInfo: true,
-                    socialLinks: true,
-                },
-            },
-            requestedByUser: {
-                select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    image: true,
-                },
-            },
-        },
-    });
-
-    return {
-        requestId: request.id,
-        cardId: request.cardId,
-        status: request.status,
-        message: request.message,
-        card: request.card,
-        requestedBy: request.requestedByUser,
-        createdAt: request.createdAt,
-    };
-};
-
-// Get received requests (Customer sees Owner's requests)
-export const getReceivedRequests = async (userId: string) => {
-    if (!userId) throw new Error("userId is required");
-
-    const requests = await prisma.contactRequest.findMany({
-        where: {
-            requestedTo: userId, // Requests sent to this user
-        },
-        include: {
-            card: {
-                include: {
-                    personalInfo: true,
-                    socialLinks: true,
-                },
-            },
-            requestedByUser: {
-                select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    image: true,
-                },
-            },
-        },
-        orderBy: {
-            createdAt: "desc",
-        },
-    });
-
-    return requests.map((req) => ({
-        id: req.id,
-        cardId: req.cardId,
-        card: req.card,
-        owner: req.requestedByUser,
-        status: req.status,
-        message: req.message,
-        createdAt: req.createdAt,
-        updatedAt: req.updatedAt,
-    }));
-};
-
-// Get sent requests (Owner sees their requests)
-export const getSentRequests = async (userId: string) => {
-    if (!userId) throw new Error("userId is required");
-
-    const requests = await prisma.contactRequest.findMany({
-        where: {
-            requestedBy: userId, // Requests sent by this user
-        },
-        include: {
-            card: {
-                include: {
-                    personalInfo: true,
-                    socialLinks: true,
-                },
-            },
-            requestedToUser: {
-                select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    image: true,
-                },
-            },
-        },
-        orderBy: {
-            createdAt: "desc",
-        },
-    });
-
-    return requests.map((req) => ({
-        id: req.id,
-        cardId: req.cardId,
-        card: req.card,
-        customer: req.requestedToUser,
-        status: req.status,
-        message: req.message,
-        createdAt: req.createdAt,
-        updatedAt: req.updatedAt,
-    }));
-};
-
-// Approve request (Customer approves)
-export const approveRequest = async (requestId: string, userId: string) => {
-    if (!requestId) throw new Error("requestId is required");
-    if (!userId) throw new Error("Unauthorized");
-
-    // Find request
-    const request = await prisma.contactRequest.findUnique({
-        where: { id: requestId },
-        include: {
-            card: {
-                include: {
-                    personalInfo: true,
-                },
-            },
-        },
-    });
-
-    if (!request) {
-        throw new Error("Request not found");
-    }
-
-    // Verify user is the one who received the request
-    if (request.requestedTo !== userId) {
-        throw new Error("Unauthorized: You can only approve requests sent to you");
-    }
-
-    // Check if already processed
-    if (request.status !== "pending") {
-        throw new Error(`Request already ${request.status}`);
-    }
-
-    // Update request status
-    const updatedRequest = await prisma.contactRequest.update({
-        where: { id: requestId },
-        data: {
-=======
     // 4️⃣ Check if already approved and contact exists
-    const approvedRequest = await prisma.permissionRequest.findFirst({
+    const approvedRequest = await prisma.contactRequest.findFirst({
         where: {
             requesterId,
             cardId,
->>>>>>> features/scan-contact
             status: "approved",
         },
     });
 
-<<<<<<< HEAD
-    // Optionally auto-create contact when approved
-    // Uncomment if you want automatic contact creation
-    /*
-=======
     if (approvedRequest) {
         // Check if contact already exists
         const existingContact = await prisma.contact.findFirst({
@@ -843,7 +308,7 @@ export const approveRequest = async (requestId: string, userId: string) => {
     }
 
     // 5️⃣ Create permission request
-    const request = await prisma.permissionRequest.create({
+    const request = await prisma.contactRequest.create({
         data: {
             requesterId,
             cardId,
@@ -869,12 +334,12 @@ export const approveRequest = async (requestId: string, userId: string) => {
 const getReceivedRequests = async (userId: string) => {
     if (!userId) throw new Error("userId is required");
 
-    // Check if permissionRequest model is available in Prisma client
-    if (!prisma.permissionRequest) {
-        throw new Error("PermissionRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
+    // Check if contactRequest model is available in Prisma client
+    if (!prisma.contactRequest) {
+        throw new Error("ContactRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
     }
 
-    const requests = await prisma.permissionRequest.findMany({
+    const requests = await prisma.contactRequest.findMany({
         where: {
             cardOwnerId: userId,
             status: "pending",
@@ -898,12 +363,12 @@ const getReceivedRequests = async (userId: string) => {
 const getSentRequests = async (userId: string) => {
     if (!userId) throw new Error("userId is required");
 
-    // Check if permissionRequest model is available in Prisma client
-    if (!prisma.permissionRequest) {
-        throw new Error("PermissionRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
+    // Check if contactRequest model is available in Prisma client
+    if (!prisma.contactRequest) {
+        throw new Error("ContactRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
     }
 
-    const requests = await prisma.permissionRequest.findMany({
+    const requests = await prisma.contactRequest.findMany({
         where: {
             requesterId: userId,
         },
@@ -927,13 +392,13 @@ const approveRequest = async (requestId: string, cardOwnerId: string) => {
     if (!requestId) throw new Error("requestId is required");
     if (!cardOwnerId) throw new Error("Unauthorized");
 
-    // Check if permissionRequest model is available in Prisma client
-    if (!prisma.permissionRequest) {
-        throw new Error("PermissionRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
+    // Check if contactRequest model is available in Prisma client
+    if (!prisma.contactRequest) {
+        throw new Error("ContactRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
     }
 
     // 1️⃣ Find request
-    const request = await prisma.permissionRequest.findUnique({
+    const request = await prisma.contactRequest.findUnique({
         where: { id: requestId },
         include: {
             card: {
@@ -957,66 +422,17 @@ const approveRequest = async (requestId: string, cardOwnerId: string) => {
     }
 
     // 4️⃣ Update request status
-    await prisma.permissionRequest.update({
+    await prisma.contactRequest.update({
         where: { id: requestId },
         data: { status: "approved" },
     });
 
     // 5️⃣ Create contact for requester (Owner's list)
->>>>>>> features/scan-contact
     const personalInfo = request.card.personalInfo;
     if (!personalInfo) {
         throw new Error("Card personal info not found");
     }
 
-<<<<<<< HEAD
-    const contact = await prisma.contact.create({
-        data: {
-            userId: request.requestedBy, // Owner gets customer's contact
-            cardId: request.cardId,
-            firstName: personalInfo.firstName || "",
-            lastName: personalInfo.lastName || "",
-            phone: personalInfo.phoneNumber || "",
-            email: personalInfo.email || "",
-            company: "",
-            jobTitle: personalInfo.jobTitle || "",
-            image: "",
-            logo: "",
-            banner: "",
-            profile_img: "",
-            note: "",
-        },
-    });
-    */
-
-    return {
-        requestId: updatedRequest.id,
-        status: updatedRequest.status,
-        // contact: contact, // If auto-create enabled
-    };
-};
-
-// Reject request (Customer rejects)
-export const rejectRequest = async (requestId: string, userId: string) => {
-    if (!requestId) throw new Error("requestId is required");
-    if (!userId) throw new Error("Unauthorized");
-
-    // Find request
-    const request = await prisma.contactRequest.findUnique({
-        where: { id: requestId },
-    });
-
-    if (!request) {
-        throw new Error("Request not found");
-    }
-
-    // Verify user is the one who received the request
-    if (request.requestedTo !== userId) {
-        throw new Error("Unauthorized: You can only reject requests sent to you");
-    }
-
-    // Check if already processed
-=======
     // Check if contact already exists
     const existingContact = await prisma.contact.findFirst({
         where: {
@@ -1118,13 +534,13 @@ const rejectRequest = async (requestId: string, cardOwnerId: string) => {
     if (!requestId) throw new Error("requestId is required");
     if (!cardOwnerId) throw new Error("Unauthorized");
 
-    // Check if permissionRequest model is available in Prisma client
-    if (!prisma.permissionRequest) {
-        throw new Error("PermissionRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
+    // Check if contactRequest model is available in Prisma client
+    if (!prisma.contactRequest) {
+        throw new Error("ContactRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
     }
 
     // 1️⃣ Find request
-    const request = await prisma.permissionRequest.findUnique({
+    const request = await prisma.contactRequest.findUnique({
         where: { id: requestId },
     });
 
@@ -1136,27 +552,12 @@ const rejectRequest = async (requestId: string, cardOwnerId: string) => {
     }
 
     // 3️⃣ Check status
->>>>>>> features/scan-contact
     if (request.status !== "pending") {
         throw new Error(`Request already ${request.status}`);
     }
 
-<<<<<<< HEAD
-    // Update request status
-    const updatedRequest = await prisma.contactRequest.update({
-        where: { id: requestId },
-        data: {
-            status: "rejected",
-        },
-    });
-
-    return {
-        requestId: updatedRequest.id,
-        status: updatedRequest.status,
-    };
-=======
     // 4️⃣ Update request status
-    const updated = await prisma.permissionRequest.update({
+    const updated = await prisma.contactRequest.update({
         where: { id: requestId },
         data: { status: "rejected" },
     });
@@ -1166,7 +567,7 @@ const rejectRequest = async (requestId: string, cardOwnerId: string) => {
 
 // Create reverse permission request: When customer saves owner's contact,
 // automatically create a request from owner to customer
-const createReversePermissionRequest = async (
+const createReverseContactRequest = async (
     ownerCardId: string,
     customerCardId: string,
     message?: string
@@ -1174,9 +575,9 @@ const createReversePermissionRequest = async (
     if (!ownerCardId) throw new Error("Owner card ID is required");
     if (!customerCardId) throw new Error("Customer card ID is required");
 
-    // Check if permissionRequest model is available in Prisma client
-    if (!prisma.permissionRequest) {
-        throw new Error("PermissionRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
+    // Check if contactRequest model is available in Prisma client
+    if (!prisma.contactRequest) {
+        throw new Error("ContactRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
     }
 
     // 1️⃣ Get owner's card to find owner's userId
@@ -1199,7 +600,7 @@ const createReversePermissionRequest = async (
     }
 
     // 4️⃣ Check if already requested
-    const existingRequest = await prisma.permissionRequest.findFirst({
+    const existingRequest = await prisma.contactRequest.findFirst({
         where: {
             requesterId: ownerCard.userId, // Owner requesting
             cardId: customerCardId, // Customer's card
@@ -1219,7 +620,7 @@ const createReversePermissionRequest = async (
 
     // 6️⃣ Create reverse permission request
     // FROM owner TO customer
-    const request = await prisma.permissionRequest.create({
+    const request = await prisma.contactRequest.create({
         data: {
             requesterId: ownerCard.userId, // Owner's userId
             cardId: customerCardId, // Customer's card ID
@@ -1240,7 +641,6 @@ const createReversePermissionRequest = async (
     });
 
     return request;
->>>>>>> features/scan-contact
 };
 
 export const contactServices = {
@@ -1248,20 +648,10 @@ export const contactServices = {
     getAllContacts,
     updateContact,
     deleteContact,
-<<<<<<< HEAD
-    shareVisitorContact,
-    getPendingVisitorShares,
-    approveVisitorShare,
-    rejectVisitorShare,
-=======
->>>>>>> features/scan-contact
     requestContactPermission,
     getReceivedRequests,
     getSentRequests,
     approveRequest,
     rejectRequest,
-<<<<<<< HEAD
-=======
-    createReversePermissionRequest,
->>>>>>> features/scan-contact
+    createReverseContactRequest,
 };

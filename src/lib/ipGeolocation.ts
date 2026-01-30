@@ -22,22 +22,6 @@ export const getLocationFromIP = async (
   req?: any // Optional request object for header detection
 ): Promise<LocationData | null> => {
   try {
-<<<<<<< HEAD
-    // Skip localhost/local IPs (can't geolocate)
-    if (!ip ||
-      ip === '::1' ||
-      ip === '127.0.0.1' ||
-      ip.startsWith('192.168.') ||
-      ip.startsWith('10.') ||
-      ip.startsWith('172.16.')) {
-      console.log('Skipping geolocation for local IP:', ip);
-      return null;
-    }
-
-    // Extract real IP if behind proxy (x-forwarded-for can have multiple IPs)
-    const realIP = ip?.split(',')[0]?.trim();
-    if (!realIP) return null; // ip missing হলে early return
-=======
     // Handle invalid IP
     if (!ip || ip === 'unknown') {
       console.log('⚠️ Invalid IP, trying to detect from request headers');
@@ -58,7 +42,6 @@ export const getLocationFromIP = async (
 
     // Extract real IP if behind proxy
     const realIP = ip.split(',')[0]?.trim() || ip.trim();
->>>>>>> features/scan-contact
 
     // Check cache first
     const cached = locationCache.get(realIP);
@@ -162,28 +145,9 @@ const detectLocationFromRequest = (req?: any): LocationData | null => {
     }
 
     return null;
-<<<<<<< HEAD
-  } catch (error: any) {
-    // Handle rate limit error specifically
-    if (error.response?.status === 429) {
-      console.warn('Rate limit exceeded for ip-api.com, checking cache...');
-      // Return cached data if available, even if expired
-      const realIP = ip?.split(',')[0]?.trim();
-      if (!realIP) return null; // ip missing হলে early return
-      
-      const cached = locationCache.get(realIP);
-      if (cached) {
-        console.log('Returning expired cache due to rate limit');
-        return cached.data;
-      }
-    }
-    console.error('IP geolocation error:', error.message);
-    return null; // Fail silently, don't block the request
-=======
   } catch (error) {
     console.error('Error detecting location from request:', error);
     return null;
->>>>>>> features/scan-contact
   }
 };
 

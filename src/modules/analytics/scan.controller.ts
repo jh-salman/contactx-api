@@ -8,20 +8,11 @@ const trackScanController = async (req: Request, res: Response, next: NextFuncti
     const { cardId } = req.params;
     if (!cardId) return res.status(400).json({ success: false, message: "Card ID is required" });
 
-    const ip =
-      req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() ||
-      req.socket.remoteAddress ||
-      req.ip ||
-      null;
-
-<<<<<<< HEAD
-=======
     // Smart IP detection - works in dev and production
     const ip = getClientIP(req);
     console.log('🌐 Client IP detected:', ip);
 
     // Request meta info
->>>>>>> features/scan-contact
     const meta = {
       ip: ip ?? undefined,
       userAgent: req.headers["user-agent"]?.toString(),
@@ -38,29 +29,19 @@ const trackScanController = async (req: Request, res: Response, next: NextFuncti
       longitude?: number;
       city?: string;
       country?: string;
-<<<<<<< HEAD
-    };  
-
-=======
     }
 
     // Scan track + card fetch (location will be auto-detected from IP)
->>>>>>> features/scan-contact
     const card = await scanServices.trackScanAndFetchCard(cardId, meta);
 
     res.status(200).json({
       success: true,
-      message: card.message || "Scan tracked successfully",
+      message: "Scan tracked successfully",
       data: card,
     });
   } catch (error: any) {
-<<<<<<< HEAD
-    console.error("Scan tracking error:", error);
-    res.status(500).json({ success: false, message: error.message || "Internal server error" });
-=======
     console.error('❌ Scan controller error:', error);
     next(error);
->>>>>>> features/scan-contact
   }
 };
 
