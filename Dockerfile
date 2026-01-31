@@ -3,25 +3,36 @@ FROM node:22.12.0-alpine
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files first
 COPY package*.json ./
-COPY prisma ./prisma/
+COPY prisma.config.ts ./
 
 # Install dependencies
 RUN npm ci
 
-# Copy source code
-COPY . .
+# Copy Prisma schema
+COPY prisma ./prisma/
 
 # Generate Prisma Client
 RUN npx prisma generate
 
-# Build TypeScript
+# Copy TypeScript config
+COPY tsconfig.json ./
+
+# Copy source code
+COPY src ./src/
+
+# Build TypeScript (this creates dist/ folder)
 RUN npm run build
+
+# Verify build output exists
+RUN ls -la dist/ || (echo "Build failed - dist folder not found" && exit 1)
+RUN ls -la dist/src/ || (echo "dist/src folder not found" && exit 1)
+RUN test -f dist/src/server.js || (echo "dist/src/server.js not found" && exit 1)
 
 # Expose port
 EXPOSE 3004
 
-# Start server
-CMD ["npm", "start"]
+# Start server (update path to match actual build output)
+CMD ["node", "dist/src/server.js"]
 
