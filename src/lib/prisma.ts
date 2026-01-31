@@ -7,7 +7,7 @@ const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
   const error = new Error(
     'DATABASE_URL environment variable is not set. ' +
-    'Please ensure DATABASE_URL is configured in your Vercel environment variables.'
+    'Please ensure DATABASE_URL is configured in your environment variables.'
   );
   console.error('❌ Prisma initialization error:', error.message);
   throw error;
@@ -20,9 +20,8 @@ try {
   adapter = new PrismaPg({ connectionString });
   prisma = new PrismaClient({ adapter });
 
-// Handle Prisma connection cleanup for serverless environments
-  // In serverless environments, connections are reused across invocations
-  // No need to disconnect on each request - Vercel handles connection pooling
+// Handle Prisma connection cleanup
+  // Connections are reused across invocations in production environments
 } catch (error) {
   console.error('❌ Failed to initialize Prisma client:', error);
   throw new Error(

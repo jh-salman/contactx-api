@@ -2,7 +2,6 @@ import dotenv from "dotenv";
 import path from "path";
 
 // Load environment variables
-// In Vercel, environment variables are automatically available
 // Only load .env file in development
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config({

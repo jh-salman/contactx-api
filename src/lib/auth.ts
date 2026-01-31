@@ -24,10 +24,6 @@ const getTrustedOrigins = (): string[] => {
             "http://10.26.38.18:3004", // Mobile app origin (update IP if it changes)
             "https://hwy-editorial-updates-talked.trycloudflare.com", // Cloudflare tunnel
             "https://seems-alive-launch-review.trycloudflare.com", // Expo tunnel
-            "https://contactx-api-git-main-jhsalmans-projects.vercel.app", // Production Vercel URL
-            // Add Vercel URL if available
-            process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
-            process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : null,
             process.env.BETTER_AUTH_URL,
             process.env.FRONTEND_URL,
         ].filter(Boolean) as string[];
@@ -50,20 +46,9 @@ const getBaseURL = (): string => {
     if (process.env.CLOUDFLARE_TUNNEL_URL) {
         return process.env.CLOUDFLARE_TUNNEL_URL;
     }
-    // Railway URL (Railway provides RAILWAY_PUBLIC_DOMAIN)
-    if (process.env.RAILWAY_PUBLIC_DOMAIN) {
-        return `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
-    }
-    // Vercel URL (with https:// prefix) - for backward compatibility
-    if (process.env.VERCEL_URL) {
-        return `https://${process.env.VERCEL_URL}`;
-    }
-    if (process.env.NEXT_PUBLIC_VERCEL_URL) {
-        return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
-    }
     // Production fallback - throw error if no URL configured
     if (process.env.NODE_ENV === 'production') {
-        throw new Error('BETTER_AUTH_URL or RAILWAY_PUBLIC_DOMAIN must be set in production');
+        throw new Error('BETTER_AUTH_URL must be set in production');
     }
     // Development fallback - use tunnel URL
     return 'https://hwy-editorial-updates-talked.trycloudflare.com';
