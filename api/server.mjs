@@ -100,8 +100,11 @@ var getTrustedOrigins = () => {
       // Cloudflare tunnel
       "https://seems-alive-launch-review.trycloudflare.com",
       // Expo tunnel
+      "https://contact-x-api.vercel.app",
+      // Production Vercel URL
       process.env.BETTER_AUTH_URL,
-      process.env.FRONTEND_URL
+      process.env.FRONTEND_URL,
+      process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null
     ].filter(Boolean);
   }
   console.log("\u{1F510} Better Auth Trusted Origins:", origins);
@@ -115,8 +118,11 @@ var getBaseURL = () => {
   if (process.env.CLOUDFLARE_TUNNEL_URL) {
     return process.env.CLOUDFLARE_TUNNEL_URL;
   }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
   if (process.env.NODE_ENV === "production") {
-    throw new Error("BETTER_AUTH_URL must be set in production");
+    return "https://contact-x-api.vercel.app";
   }
   return "https://hwy-editorial-updates-talked.trycloudflare.com";
 };
@@ -2395,6 +2401,10 @@ var allowedOrigins = [
   // ← Expo app tunnel
   "https://ladies-sunset-bra-opportunities.trycloudflare.com",
   // ← পুরানো tunnel
+  // Vercel production URL
+  "https://contact-x-api.vercel.app",
+  // ← Production Vercel URL
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
   "http://10.108.105.18:3004",
   "http://10.102.144.18:3004",
   process.env.FRONTEND_URL,

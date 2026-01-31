@@ -24,8 +24,10 @@ const getTrustedOrigins = (): string[] => {
             "http://10.26.38.18:3004", // Mobile app origin (update IP if it changes)
             "https://hwy-editorial-updates-talked.trycloudflare.com", // Cloudflare tunnel
             "https://seems-alive-launch-review.trycloudflare.com", // Expo tunnel
+            "https://contact-x-api.vercel.app", // Production Vercel URL
             process.env.BETTER_AUTH_URL,
             process.env.FRONTEND_URL,
+            process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
         ].filter(Boolean) as string[];
     }
     
@@ -46,9 +48,13 @@ const getBaseURL = (): string => {
     if (process.env.CLOUDFLARE_TUNNEL_URL) {
         return process.env.CLOUDFLARE_TUNNEL_URL;
     }
-    // Production fallback - throw error if no URL configured
+    // Vercel URL (Vercel automatically provides VERCEL_URL)
+    if (process.env.VERCEL_URL) {
+        return `https://${process.env.VERCEL_URL}`;
+    }
+    // Production fallback - use Vercel URL if in production
     if (process.env.NODE_ENV === 'production') {
-        throw new Error('BETTER_AUTH_URL must be set in production');
+        return 'https://contact-x-api.vercel.app';
     }
     // Development fallback - use tunnel URL
     return 'https://hwy-editorial-updates-talked.trycloudflare.com';
