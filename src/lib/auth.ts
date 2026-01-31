@@ -50,16 +50,20 @@ const getBaseURL = (): string => {
     if (process.env.CLOUDFLARE_TUNNEL_URL) {
         return process.env.CLOUDFLARE_TUNNEL_URL;
     }
-    // Vercel URL (with https:// prefix)
+    // Railway URL (Railway provides RAILWAY_PUBLIC_DOMAIN)
+    if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+        return `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
+    }
+    // Vercel URL (with https:// prefix) - for backward compatibility
     if (process.env.VERCEL_URL) {
         return `https://${process.env.VERCEL_URL}`;
     }
     if (process.env.NEXT_PUBLIC_VERCEL_URL) {
         return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
     }
-    // Production fallback - use Vercel URL
+    // Production fallback - throw error if no URL configured
     if (process.env.NODE_ENV === 'production') {
-        return 'https://contactx-api-git-main-jhsalmans-projects.vercel.app';
+        throw new Error('BETTER_AUTH_URL or RAILWAY_PUBLIC_DOMAIN must be set in production');
     }
     // Development fallback - use tunnel URL
     return 'https://hwy-editorial-updates-talked.trycloudflare.com';

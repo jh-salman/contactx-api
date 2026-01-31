@@ -34,13 +34,14 @@ const allowedOrigins = [
   'https://hwy-editorial-updates-talked.trycloudflare.com', // ← API Server tunnel
   'https://seems-alive-launch-review.trycloudflare.com', // ← Expo app tunnel
   'https://ladies-sunset-bra-opportunities.trycloudflare.com', // ← পুরানো tunnel
-  // Vercel production URL
-  'https://contactx-api-git-main-jhsalmans-projects.vercel.app', // ← Production Vercel URL
-  'http://10.108.105.18:3004',
-  'http://10.102.144.18:3004',
-  // Vercel production URL (will be set via env)
+  // Railway production URL (will be set via env)
+  process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null,
+  // Vercel production URL (for backward compatibility)
+  'https://contactx-api-git-main-jhsalmans-projects.vercel.app', // ← Old Vercel URL (can remove later)
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
   process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : null,
+  'http://10.108.105.18:3004',
+  'http://10.102.144.18:3004',
   process.env.FRONTEND_URL,
   process.env.EXPO_APP_URL,
 ].filter(Boolean) as string[];
