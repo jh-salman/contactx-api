@@ -19,4 +19,10 @@ async function start() {
   }
 }
 
-start();
+// For Vercel: export the app as default
+export default app;
+
+// For local development: start the server
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  start();
+}
