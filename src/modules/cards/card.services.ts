@@ -99,6 +99,7 @@ const getAllCard = async (userId: string): Promise<Card[]> => {
     }
 
     try {
+        console.log('🔍 Fetching cards for userId:', userId);
         const cards = await prisma.card.findMany({
             where: { userId },
             include: {
@@ -111,15 +112,26 @@ const getAllCard = async (userId: string): Promise<Card[]> => {
             },
         });
 
+        console.log('✅ Found cards:', cards.length);
+        if (cards.length > 0) {
+            console.log('📋 Card IDs:', cards.map(c => c.id));
+        }
+
         // Return empty array if no cards found
         if (!cards || cards.length === 0) {
+            console.log('ℹ️ No cards found for userId:', userId);
             return [];
         }
 
         return cards;
     } catch (error: any) {
         // Handle database errors gracefully (table/column doesn't exist, etc.)
-        console.warn('⚠️ Error fetching cards, returning empty array:', error.message);
+        console.error('❌ Error fetching cards:', {
+            message: error.message,
+            code: error.code,
+            meta: error.meta,
+            userId
+        });
         return [];
     }
 };
