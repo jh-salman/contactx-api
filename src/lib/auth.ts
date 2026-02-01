@@ -22,9 +22,8 @@ const getTrustedOrigins = (): string[] => {
             "http://localhost:3004",
             "http://127.0.0.1:3004",
             "http://10.26.38.18:3004", // Mobile app origin (update IP if it changes)
+            "https://contact-x-api.vercel.app", // Production Vercel URL - mobile apps use this as origin
             "https://hwy-editorial-updates-talked.trycloudflare.com", // Cloudflare tunnel
-            "https://seems-alive-launch-review.trycloudflare.com", // Expo tunnel
-            "https://contact-x-api.vercel.app", // Production Vercel URL
             process.env.BETTER_AUTH_URL,
             process.env.FRONTEND_URL,
             process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
