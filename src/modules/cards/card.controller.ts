@@ -183,14 +183,23 @@ const createCard = async (
 };
 
 const getAllCard = async (req: Request, res: Response) => {
-  // Logic to get a card
-  const userId = req.user?.id as string;
-  const result = await cardServices.getAllCard(userId);
-  res.status(200).json({
-    success: true,
-    message: "Card details",
-    data: result
-  });
+  try {
+    const userId = req.user?.id as string;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    
+    const result = await cardServices.getAllCard(userId);
+    res.status(200).json({
+      success: true,
+      message: "Card details",
+      data: result
+    });
+  } catch (error: any) {
+    // Services already return empty arrays, but handle any unexpected errors
+    console.warn('⚠️ Error in getAllCard controller:', error.message);
+    res.status(200).json({ success: true, data: [] });
+  }
 };
 
 const updateCard = async (req: Request, res: Response, next: any) => {

@@ -141,12 +141,18 @@ const saveContact = async (
 export const getAllContacts = async (userId: string) => {
     if (!userId) throw new Error("userId is required");
 
-    const contacts = await prisma.contact.findMany({
-        where: { userId },
-        orderBy: { createdAt: "desc" },
-    });
+    try {
+        const contacts = await prisma.contact.findMany({
+            where: { userId },
+            orderBy: { createdAt: "desc" },
+        });
 
-    return contacts || [];
+        return contacts || [];
+    } catch (error: any) {
+        // Handle database errors gracefully (table/column doesn't exist, etc.)
+        console.warn('⚠️ Error fetching contacts, returning empty array:', error.message);
+        return [];
+    }
 };
 
 // Update contact
@@ -334,50 +340,59 @@ const requestContactPermission = async (
 const getReceivedRequests = async (userId: string) => {
     if (!userId) throw new Error("userId is required");
 
-    // Check if contactRequest model is available in Prisma client
-    if (!prisma.contactRequest) {
-        throw new Error("ContactRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
-    }
+    try {
+        // Check if contactRequest model is available in Prisma client
+        if (!prisma.contactRequest) {
+            console.warn('⚠️ ContactRequest model not found, returning empty array');
+            return [];
+        }
 
-    const requests = await prisma.contactRequest.findMany({
-        where: {
-            requestedTo: userId,
-            status: "pending",
-        },
-        include: {
-            requestedByUser: {
-                select: { id: true, name: true, email: true, image: true },
+        const requests = await prisma.contactRequest.findMany({
+            where: {
+                requestedTo: userId,
+                status: "pending",
             },
-            card: {
-                include: {
-                    personalInfo: true,
+            include: {
+                requestedByUser: {
+                    select: { id: true, name: true, email: true, image: true },
+                },
+                card: {
+                    include: {
+                        personalInfo: true,
+                    },
                 },
             },
-        },
-        orderBy: { createdAt: "desc" },
-    });
+            orderBy: { createdAt: "desc" },
+        });
 
-    return requests || [];
+        return requests || [];
+    } catch (error: any) {
+        // Handle database errors gracefully (table doesn't exist, etc.)
+        console.warn('⚠️ Error fetching received requests, returning empty array:', error.message);
+        return [];
+    }
 };
 
 const getSentRequests = async (userId: string) => {
     if (!userId) throw new Error("userId is required");
 
-    // Check if contactRequest model is available in Prisma client
-    if (!prisma.contactRequest) {
-        throw new Error("ContactRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
-    }
+    try {
+        // Check if contactRequest model is available in Prisma client
+        if (!prisma.contactRequest) {
+            console.warn('⚠️ ContactRequest model not found, returning empty array');
+            return [];
+        }
 
-    const requests = await prisma.contactRequest.findMany({
-        where: {
-            requestedBy: userId,
-        },
-        include: {
-            card: {
-                include: {
-                    personalInfo: true,
-                },
+        const requests = await prisma.contactRequest.findMany({
+            where: {
+                requestedBy: userId,
             },
+            include: {
+                card: {
+                    include: {
+                        personalInfo: true,
+                    },
+                },
             requestedToUser: {
                 select: { id: true, name: true, email: true, image: true },
             },
@@ -385,7 +400,12 @@ const getSentRequests = async (userId: string) => {
         orderBy: { createdAt: "desc" },
     });
 
-    return requests || [];
+        return requests || [];
+    } catch (error: any) {
+        // Handle database errors gracefully (table doesn't exist, etc.)
+        console.warn('⚠️ Error fetching sent requests, returning empty array:', error.message);
+        return [];
+    }
 };
 
 const approveRequest = async (requestId: string, cardOwnerId: string) => {

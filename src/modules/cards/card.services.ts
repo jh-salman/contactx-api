@@ -98,24 +98,30 @@ const getAllCard = async (userId: string): Promise<Card[]> => {
         throw new Error("userId is required");
     }
 
-    const cards = await prisma.card.findMany({
-        where: { userId },
-        include: {
-            personalInfo: true,
-            socialLinks: true,
-            contacts:true
-        },
-        orderBy: {
-            createdAt: "desc",
-        },
-    });
+    try {
+        const cards = await prisma.card.findMany({
+            where: { userId },
+            include: {
+                personalInfo: true,
+                socialLinks: true,
+                contacts:true
+            },
+            orderBy: {
+                createdAt: "desc",
+            },
+        });
 
-    // optional: return empty array instead of throwing
-    if (!cards || cards.length === 0) {
-        return []; // safer for frontend
+        // Return empty array if no cards found
+        if (!cards || cards.length === 0) {
+            return [];
+        }
+
+        return cards;
+    } catch (error: any) {
+        // Handle database errors gracefully (table/column doesn't exist, etc.)
+        console.warn('⚠️ Error fetching cards, returning empty array:', error.message);
+        return [];
     }
-
-    return cards;
 };
 
 

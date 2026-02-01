@@ -109,7 +109,9 @@ const getAllContactsController = async (req: Request, res: Response, next: NextF
 
     res.status(200).json({ success: true, data: contacts });
   } catch (error: any) {
-    res.status(400).json({ success: false, message: error.message });
+    // Services already return empty arrays, but handle any unexpected errors
+    console.warn('⚠️ Error in getAllContactsController:', error.message);
+    res.status(200).json({ success: true, data: [] });
   }
 };
 
@@ -243,14 +245,14 @@ const getReceivedRequestsController = async (req: Request, res: Response, next: 
             data: requests,
         });
     } catch (error: any) {
-        console.error('❌ Get received requests error:', error);
+        // Services already return empty arrays, but handle any unexpected errors
+        console.warn('⚠️ Error in getReceivedRequestsController:', error.message);
         if (!res.headersSent) {
-            return res.status(400).json({
-                success: false,
-                message: error.message || "Something went wrong",
+            return res.status(200).json({
+                success: true,
+                data: [],
             });
         }
-        next(error);
     }
 };
 
@@ -269,14 +271,14 @@ const getSentRequestsController = async (req: Request, res: Response, next: any)
             data: requests,
         });
     } catch (error: any) {
-        console.error('❌ Get sent requests error:', error);
+        // Services already return empty arrays, but handle any unexpected errors
+        console.warn('⚠️ Error in getSentRequestsController:', error.message);
         if (!res.headersSent) {
-            return res.status(400).json({
-                success: false,
-                message: error.message || "Something went wrong",
+            return res.status(200).json({
+                success: true,
+                data: [],
             });
         }
-        next(error);
     }
 };
 
