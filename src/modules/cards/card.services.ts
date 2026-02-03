@@ -103,8 +103,8 @@ const getAllCard = async (userId: string): Promise<Card[]> => {
         const cards = await prisma.card.findMany({
             where: { userId },
             include: {
-                personalInfo: true,
-                socialLinks: true,
+                // personalInfo: true,
+                // socialLinks: true,
                 // contacts: true // Removed - may cause schema issues if table doesn't exist
             },
             orderBy: {
@@ -112,7 +112,7 @@ const getAllCard = async (userId: string): Promise<Card[]> => {
             },
         });
 
-        console.log('✅ Found cards:', cards.length);
+       
         if (cards.length > 0) {
             console.log('📋 Card IDs:', cards.map(c => c.id));
         }
