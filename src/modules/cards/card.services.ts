@@ -104,8 +104,8 @@ const getAllCard = async (userId: string): Promise<Card[]> => {
             where: { userId },
             include: {
                 personalInfo: true,
-                socialLinks: true,
-                // contacts: true // Removed - may cause schema issues if table doesn't exist
+                // Temporarily remove socialLinks to debug schema issue
+                // socialLinks: true,
             },
             orderBy: {
                 createdAt: "desc",
