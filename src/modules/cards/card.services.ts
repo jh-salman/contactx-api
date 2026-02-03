@@ -100,39 +100,78 @@ const getAllCard = async (userId: string): Promise<Card[]> => {
 
     try {
         console.log('🔍 Fetching cards for userId:', userId);
+        
+        // Fetch cards WITHOUT includes to avoid column errors
         const cards = await prisma.card.findMany({
             where: { userId },
-            include: {
-                // personalInfo: true,
-                // socialLinks: true,
-                // contacts: true // Removed - may cause schema issues if table doesn't exist
-            },
             orderBy: {
                 createdAt: "desc",
             },
         });
 
-       
-        if (cards.length > 0) {
-            console.log('📋 Card IDs:', cards.map(c => c.id));
-        }
-
-        // Return empty array if no cards found
+        console.log('✅ Found cards (basic):', cards.length);
+        
         if (!cards || cards.length === 0) {
             console.log('ℹ️ No cards found for userId:', userId);
             return [];
         }
 
-        return cards;
+        // Manually fetch relations separately to avoid Prisma schema errors
+        const cardsWithRelations = await Promise.all(
+            cards.map(async (card) => {
+                const result: any = { ...card };
+                
+                // Try to fetch personalInfo manually
+                try {
+                    const personalInfo = await prisma.personalInfo.findUnique({
+                        where: { cardId: card.id },
+                    });
+                    result.personalInfo = personalInfo;
+                } catch (e: any) {
+                    console.warn(`⚠️ personalInfo fetch failed for card ${card.id}:`, e.message);
+                    result.personalInfo = null;
+                }
+                
+                // Try to fetch socialLinks manually
+                try {
+                    const socialLinks = await prisma.socialLinks.findUnique({
+                        where: { cardId: card.id },
+                    });
+                    result.socialLinks = socialLinks;
+                } catch (e: any) {
+                    console.warn(`⚠️ socialLinks fetch failed for card ${card.id}:`, e.message);
+                    result.socialLinks = null;
+                }
+                
+                return result;
+            })
+        );
+
+        console.log('✅ Cards with relations:', cardsWithRelations.length);
+        if (cardsWithRelations.length > 0) {
+            console.log('📋 Card IDs:', cardsWithRelations.map(c => c.id));
+        }
+        
+        return cardsWithRelations as Card[];
+        
     } catch (error: any) {
-        // Handle database errors gracefully (table/column doesn't exist, etc.)
+        // Handle database errors gracefully
         console.error('❌ Error fetching cards:', {
             message: error.message,
             code: error.code,
             meta: error.meta,
             userId
         });
-        return [];
+        
+        // Return empty array for schema errors
+        if (error.message?.includes('column') || 
+            error.message?.includes('does not exist') ||
+            error.message?.includes('(not available)') ||
+            error.code === 'P2001') {
+            return [];
+        }
+        
+        throw error;
     }
 };
 
