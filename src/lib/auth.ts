@@ -3,6 +3,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 import { phoneNumber } from "better-auth/plugins";
+import { sendOTPCode } from "./twilio";
 
 // Parse trusted origins from environment variable or use defaults
 // Can be comma-separated string or array
@@ -74,8 +75,20 @@ try {
     }),
     plugins: [
         phoneNumber({
-            sendOTP: ({ phoneNumber, code }, ctx) => {
-                console.log("otp ", code)
+            sendOTP: async ({ phoneNumber, code }, ctx) => {
+                console.log("📱 Sending OTP to:", phoneNumber);
+                console.log("🔐 OTP Code:", code);
+                
+                // Send OTP via Twilio SMS
+                const sent = await sendOTPCode(phoneNumber, code);
+                
+                if (sent) {
+                    console.log("✅ OTP sent successfully via SMS");
+                } else {
+                    console.warn("⚠️ Failed to send OTP via SMS, code logged to console");
+                    // Fallback: Still log to console if SMS fails
+                    console.log("🔐 OTP Code (fallback):", code);
+                }
             },
             signUpOnVerification: {
                 getTempEmail: (phone) => `${phone}@temp.yoursite.com`,
