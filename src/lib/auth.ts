@@ -4,6 +4,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 import { phoneNumber } from "better-auth/plugins";
 import { sendOTPCode, getTwilioStatus } from "./twilio";
+import { logger } from "./logger";
 
 // Parse trusted origins from environment variable or use defaults
 // Can be comma-separated string or array
@@ -24,7 +25,6 @@ const getTrustedOrigins = (): string[] => {
             "http://127.0.0.1:3004",
             "http://10.26.38.18:3004", // Mobile app origin (update IP if it changes)
             "https://contact-x-api.vercel.app", // Production Vercel URL - mobile apps use this as origin
-            "https://hwy-editorial-updates-talked.trycloudflare.com", // Cloudflare tunnel
             process.env.BETTER_AUTH_URL,
             process.env.FRONTEND_URL,
             process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
@@ -32,7 +32,7 @@ const getTrustedOrigins = (): string[] => {
     }
     
     // Log trusted origins for debugging
-    console.log('🔐 Better Auth Trusted Origins:', origins);
+    logger.info('Better Auth Trusted Origins', { origins });
     
     return origins;
 };
@@ -65,20 +65,21 @@ let auth: ReturnType<typeof betterAuth>;
 
 try {
     const baseURL = getBaseURL();
-    console.log('🔗 Better Auth Base URL:', baseURL);
+    logger.info('Better Auth Base URL', { baseURL });
     
     // Log Twilio configuration status
     const twilioStatus = getTwilioStatus();
     if (twilioStatus.configured) {
-        console.log('✅ Twilio is configured and ready');
-        console.log('   📱 Using manual SMS - Better Auth generates the code');
+        logger.info('Twilio is configured and ready', { 
+            note: 'Using manual SMS - Better Auth generates the code' 
+        });
     } else {
-        console.warn('⚠️ Twilio is not fully configured:', {
+        logger.warn('Twilio is not fully configured', {
             hasAccountSid: twilioStatus.hasAccountSid,
             hasAuthToken: twilioStatus.hasAuthToken,
             hasPhoneNumber: twilioStatus.hasPhoneNumber,
+            note: 'OTP codes will be logged to console instead of sent via SMS'
         });
-        console.warn('   OTP codes will be logged to console instead of sent via SMS');
     }
     
     auth = betterAuth({
@@ -90,18 +91,19 @@ try {
     plugins: [
         phoneNumber({
             sendOTP: async ({ phoneNumber, code }, ctx) => {
-                console.log("📱 Sending OTP to:", phoneNumber);
-                console.log("🔐 OTP Code (Better Auth generated):", code);
+                logger.info("Sending OTP", { phoneNumber });
+                logger.debug("OTP Code (Better Auth generated)", { code });
                 
                 // Always use manual SMS - Better Auth generates the code
                 const sent = await sendOTPCode(phoneNumber, code);
                 
                 if (sent) {
-                    console.log("✅ OTP sent successfully via SMS");
+                    logger.info("OTP sent successfully via SMS", { phoneNumber });
                 } else {
-                    console.warn("⚠️ Failed to send OTP via SMS, code logged to console");
-                    // Fallback: Still log to console if SMS fails
-                    console.log("🔐 OTP Code (fallback):", code);
+                    logger.warn("Failed to send OTP via SMS, code logged to console", { 
+                        phoneNumber,
+                        code 
+                    });
                 }
             },
             signUpOnVerification: {
@@ -112,7 +114,7 @@ try {
     ]
 });
 } catch (error) {
-    console.error('❌ Failed to initialize Better Auth:', error);
+    logger.error('Failed to initialize Better Auth', error);
     throw new Error(
         `Better Auth initialization failed: ${error instanceof Error ? error.message : String(error)}. ` +
         'Please check your DATABASE_URL and BETTER_AUTH_SECRET environment variables.'

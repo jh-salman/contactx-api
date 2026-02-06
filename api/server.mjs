@@ -1,3 +1,9 @@
+var __defProp = Object.defineProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+
 // src/app.ts
 import express from "express";
 import cors from "cors";
@@ -27,8 +33,8 @@ var config = {
 };
 config.runtimeDataModel = JSON.parse('{"models":{"User":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"name","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"emailVerified","kind":"scalar","type":"Boolean"},{"name":"image","kind":"scalar","type":"String"},{"name":"cards","kind":"object","type":"Card","relationName":"CardToUser"},{"name":"contacts","kind":"object","type":"Contact","relationName":"ContactToUser"},{"name":"ownerShares","kind":"object","type":"VisitorContactShare","relationName":"OwnerShares"},{"name":"visitorShares","kind":"object","type":"VisitorContactShare","relationName":"VisitorShares"},{"name":"sentRequests","kind":"object","type":"ContactRequest","relationName":"SentRequests"},{"name":"receivedRequests","kind":"object","type":"ContactRequest","relationName":"ReceivedRequests"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"sessions","kind":"object","type":"Session","relationName":"SessionToUser"},{"name":"accounts","kind":"object","type":"Account","relationName":"AccountToUser"},{"name":"phoneNumber","kind":"scalar","type":"String"},{"name":"phoneNumberVerified","kind":"scalar","type":"Boolean"}],"dbName":"user"},"Session":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"expiresAt","kind":"scalar","type":"DateTime"},{"name":"token","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"ipAddress","kind":"scalar","type":"String"},{"name":"userAgent","kind":"scalar","type":"String"},{"name":"userId","kind":"scalar","type":"String"},{"name":"user","kind":"object","type":"User","relationName":"SessionToUser"}],"dbName":"session"},"Account":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"accountId","kind":"scalar","type":"String"},{"name":"providerId","kind":"scalar","type":"String"},{"name":"userId","kind":"scalar","type":"String"},{"name":"user","kind":"object","type":"User","relationName":"AccountToUser"},{"name":"accessToken","kind":"scalar","type":"String"},{"name":"refreshToken","kind":"scalar","type":"String"},{"name":"idToken","kind":"scalar","type":"String"},{"name":"accessTokenExpiresAt","kind":"scalar","type":"DateTime"},{"name":"refreshTokenExpiresAt","kind":"scalar","type":"DateTime"},{"name":"scope","kind":"scalar","type":"String"},{"name":"password","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"}],"dbName":"account"},"Verification":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"identifier","kind":"scalar","type":"String"},{"name":"value","kind":"scalar","type":"String"},{"name":"expiresAt","kind":"scalar","type":"DateTime"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"}],"dbName":"verification"},"Card":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"userId","kind":"scalar","type":"String"},{"name":"user","kind":"object","type":"User","relationName":"CardToUser"},{"name":"cardTitle","kind":"scalar","type":"String"},{"name":"cardColor","kind":"scalar","type":"String"},{"name":"logo","kind":"scalar","type":"String"},{"name":"profile","kind":"scalar","type":"String"},{"name":"cover","kind":"scalar","type":"String"},{"name":"imagesAndLayouts","kind":"scalar","type":"Json"},{"name":"isFavorite","kind":"scalar","type":"Boolean"},{"name":"personalInfo","kind":"object","type":"PersonalInfo","relationName":"CardToPersonalInfo"},{"name":"socialLinks","kind":"object","type":"socialLinks","relationName":"CardTosocialLinks"},{"name":"qrCode","kind":"scalar","type":"String"},{"name":"qrImage","kind":"scalar","type":"String"},{"name":"scan","kind":"object","type":"cardScan","relationName":"CardTocardScan"},{"name":"contacts","kind":"object","type":"Contact","relationName":"CardToContact"},{"name":"contactRequests","kind":"object","type":"ContactRequest","relationName":"CardToContactRequest"},{"name":"ownerCardShares","kind":"object","type":"VisitorContactShare","relationName":"OwnerCardShares"},{"name":"visitorCardShares","kind":"object","type":"VisitorContactShare","relationName":"VisitorCardShares"},{"name":"setting","kind":"scalar","type":"Json"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"}],"dbName":"cards"},"PersonalInfo":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"cardId","kind":"scalar","type":"String"},{"name":"card","kind":"object","type":"Card","relationName":"CardToPersonalInfo"},{"name":"firstName","kind":"scalar","type":"String"},{"name":"lastName","kind":"scalar","type":"String"},{"name":"jobTitle","kind":"scalar","type":"String"},{"name":"phoneNumber","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"company","kind":"scalar","type":"String"},{"name":"image","kind":"scalar","type":"String"},{"name":"logo","kind":"scalar","type":"String"},{"name":"note","kind":"scalar","type":"String"},{"name":"banner","kind":"scalar","type":"String"},{"name":"profile_img","kind":"scalar","type":"String"}],"dbName":"personal_info"},"socialLinks":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"cardId","kind":"scalar","type":"String"},{"name":"card","kind":"object","type":"Card","relationName":"CardTosocialLinks"},{"name":"links","kind":"scalar","type":"Json"}],"dbName":"social_links"},"cardScan":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"cardId","kind":"scalar","type":"String"},{"name":"card","kind":"object","type":"Card","relationName":"CardTocardScan"},{"name":"ip","kind":"scalar","type":"String"},{"name":"userAgent","kind":"scalar","type":"String"},{"name":"source","kind":"scalar","type":"String"},{"name":"latitude","kind":"scalar","type":"Float"},{"name":"longitude","kind":"scalar","type":"Float"},{"name":"city","kind":"scalar","type":"String"},{"name":"country","kind":"scalar","type":"String"},{"name":"banner","kind":"scalar","type":"String"},{"name":"profile_img","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"}],"dbName":"card_scans"},"Contact":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"userId","kind":"scalar","type":"String"},{"name":"cardId","kind":"scalar","type":"String"},{"name":"firstName","kind":"scalar","type":"String"},{"name":"lastName","kind":"scalar","type":"String"},{"name":"phone","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"company","kind":"scalar","type":"String"},{"name":"jobTitle","kind":"scalar","type":"String"},{"name":"image","kind":"scalar","type":"String"},{"name":"logo","kind":"scalar","type":"String"},{"name":"banner","kind":"scalar","type":"String"},{"name":"note","kind":"scalar","type":"String"},{"name":"profile_img","kind":"scalar","type":"String"},{"name":"latitude","kind":"scalar","type":"Float"},{"name":"longitude","kind":"scalar","type":"Float"},{"name":"city","kind":"scalar","type":"String"},{"name":"country","kind":"scalar","type":"String"},{"name":"user","kind":"object","type":"User","relationName":"ContactToUser"},{"name":"card","kind":"object","type":"Card","relationName":"CardToContact"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"}],"dbName":"contacts"},"VisitorContactShare":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"ownerCardId","kind":"scalar","type":"String"},{"name":"visitorCardId","kind":"scalar","type":"String"},{"name":"ownerId","kind":"scalar","type":"String"},{"name":"visitorId","kind":"scalar","type":"String"},{"name":"status","kind":"scalar","type":"String"},{"name":"latitude","kind":"scalar","type":"Float"},{"name":"longitude","kind":"scalar","type":"Float"},{"name":"city","kind":"scalar","type":"String"},{"name":"country","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"ownerCard","kind":"object","type":"Card","relationName":"OwnerCardShares"},{"name":"visitorCard","kind":"object","type":"Card","relationName":"VisitorCardShares"},{"name":"owner","kind":"object","type":"User","relationName":"OwnerShares"},{"name":"visitor","kind":"object","type":"User","relationName":"VisitorShares"}],"dbName":"visitor_contact_shares"},"ContactRequest":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"cardId","kind":"scalar","type":"String"},{"name":"requestedBy","kind":"scalar","type":"String"},{"name":"requestedTo","kind":"scalar","type":"String"},{"name":"status","kind":"scalar","type":"String"},{"name":"message","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"card","kind":"object","type":"Card","relationName":"CardToContactRequest"},{"name":"requestedByUser","kind":"object","type":"User","relationName":"SentRequests"},{"name":"requestedToUser","kind":"object","type":"User","relationName":"ReceivedRequests"}],"dbName":"contact_requests"}},"enums":{},"types":{}}');
 async function decodeBase64AsWasm(wasmBase64) {
-  const { Buffer } = await import("buffer");
-  const wasmArray = Buffer.from(wasmBase64, "base64");
+  const { Buffer: Buffer2 } = await import("buffer");
+  const wasmArray = Buffer2.from(wasmBase64, "base64");
   return new WebAssembly.Module(wasmArray);
 }
 config.compilerWasm = {
@@ -43,12 +49,82 @@ function getPrismaClientClass() {
 }
 
 // generated/prisma/internal/prismaNamespace.ts
+var prismaNamespace_exports = {};
+__export(prismaNamespace_exports, {
+  AccountScalarFieldEnum: () => AccountScalarFieldEnum,
+  AnyNull: () => AnyNull2,
+  CardScalarFieldEnum: () => CardScalarFieldEnum,
+  CardScanScalarFieldEnum: () => CardScanScalarFieldEnum,
+  ContactRequestScalarFieldEnum: () => ContactRequestScalarFieldEnum,
+  ContactScalarFieldEnum: () => ContactScalarFieldEnum,
+  DbNull: () => DbNull2,
+  Decimal: () => Decimal2,
+  JsonNull: () => JsonNull2,
+  JsonNullValueFilter: () => JsonNullValueFilter,
+  ModelName: () => ModelName,
+  NullTypes: () => NullTypes2,
+  NullableJsonNullValueInput: () => NullableJsonNullValueInput,
+  NullsOrder: () => NullsOrder,
+  PersonalInfoScalarFieldEnum: () => PersonalInfoScalarFieldEnum,
+  PrismaClientInitializationError: () => PrismaClientInitializationError2,
+  PrismaClientKnownRequestError: () => PrismaClientKnownRequestError2,
+  PrismaClientRustPanicError: () => PrismaClientRustPanicError2,
+  PrismaClientUnknownRequestError: () => PrismaClientUnknownRequestError2,
+  PrismaClientValidationError: () => PrismaClientValidationError2,
+  QueryMode: () => QueryMode,
+  SessionScalarFieldEnum: () => SessionScalarFieldEnum,
+  SocialLinksScalarFieldEnum: () => SocialLinksScalarFieldEnum,
+  SortOrder: () => SortOrder,
+  Sql: () => Sql2,
+  TransactionIsolationLevel: () => TransactionIsolationLevel,
+  UserScalarFieldEnum: () => UserScalarFieldEnum,
+  VerificationScalarFieldEnum: () => VerificationScalarFieldEnum,
+  VisitorContactShareScalarFieldEnum: () => VisitorContactShareScalarFieldEnum,
+  defineExtension: () => defineExtension,
+  empty: () => empty2,
+  getExtensionContext: () => getExtensionContext,
+  join: () => join2,
+  prismaVersion: () => prismaVersion,
+  raw: () => raw2,
+  sql: () => sql
+});
 import * as runtime2 from "@prisma/client/runtime/client";
+var PrismaClientKnownRequestError2 = runtime2.PrismaClientKnownRequestError;
+var PrismaClientUnknownRequestError2 = runtime2.PrismaClientUnknownRequestError;
+var PrismaClientRustPanicError2 = runtime2.PrismaClientRustPanicError;
+var PrismaClientInitializationError2 = runtime2.PrismaClientInitializationError;
+var PrismaClientValidationError2 = runtime2.PrismaClientValidationError;
+var sql = runtime2.sqltag;
+var empty2 = runtime2.empty;
+var join2 = runtime2.join;
+var raw2 = runtime2.raw;
+var Sql2 = runtime2.Sql;
+var Decimal2 = runtime2.Decimal;
 var getExtensionContext = runtime2.Extensions.getExtensionContext;
+var prismaVersion = {
+  client: "7.2.0",
+  engine: "0c8ef2ce45c83248ab3df073180d5eda9e8be7a3"
+};
 var NullTypes2 = {
   DbNull: runtime2.NullTypes.DbNull,
   JsonNull: runtime2.NullTypes.JsonNull,
   AnyNull: runtime2.NullTypes.AnyNull
+};
+var DbNull2 = runtime2.DbNull;
+var JsonNull2 = runtime2.JsonNull;
+var AnyNull2 = runtime2.AnyNull;
+var ModelName = {
+  User: "User",
+  Session: "Session",
+  Account: "Account",
+  Verification: "Verification",
+  Card: "Card",
+  PersonalInfo: "PersonalInfo",
+  socialLinks: "socialLinks",
+  cardScan: "cardScan",
+  Contact: "Contact",
+  VisitorContactShare: "VisitorContactShare",
+  ContactRequest: "ContactRequest"
 };
 var TransactionIsolationLevel = runtime2.makeStrictEnum({
   ReadUncommitted: "ReadUncommitted",
@@ -56,10 +132,270 @@ var TransactionIsolationLevel = runtime2.makeStrictEnum({
   RepeatableRead: "RepeatableRead",
   Serializable: "Serializable"
 });
+var UserScalarFieldEnum = {
+  id: "id",
+  name: "name",
+  email: "email",
+  emailVerified: "emailVerified",
+  image: "image",
+  createdAt: "createdAt",
+  updatedAt: "updatedAt",
+  phoneNumber: "phoneNumber",
+  phoneNumberVerified: "phoneNumberVerified"
+};
+var SessionScalarFieldEnum = {
+  id: "id",
+  expiresAt: "expiresAt",
+  token: "token",
+  createdAt: "createdAt",
+  updatedAt: "updatedAt",
+  ipAddress: "ipAddress",
+  userAgent: "userAgent",
+  userId: "userId"
+};
+var AccountScalarFieldEnum = {
+  id: "id",
+  accountId: "accountId",
+  providerId: "providerId",
+  userId: "userId",
+  accessToken: "accessToken",
+  refreshToken: "refreshToken",
+  idToken: "idToken",
+  accessTokenExpiresAt: "accessTokenExpiresAt",
+  refreshTokenExpiresAt: "refreshTokenExpiresAt",
+  scope: "scope",
+  password: "password",
+  createdAt: "createdAt",
+  updatedAt: "updatedAt"
+};
+var VerificationScalarFieldEnum = {
+  id: "id",
+  identifier: "identifier",
+  value: "value",
+  expiresAt: "expiresAt",
+  createdAt: "createdAt",
+  updatedAt: "updatedAt"
+};
+var CardScalarFieldEnum = {
+  id: "id",
+  userId: "userId",
+  cardTitle: "cardTitle",
+  cardColor: "cardColor",
+  logo: "logo",
+  profile: "profile",
+  cover: "cover",
+  imagesAndLayouts: "imagesAndLayouts",
+  isFavorite: "isFavorite",
+  qrCode: "qrCode",
+  qrImage: "qrImage",
+  setting: "setting",
+  createdAt: "createdAt",
+  updatedAt: "updatedAt"
+};
+var PersonalInfoScalarFieldEnum = {
+  id: "id",
+  cardId: "cardId",
+  firstName: "firstName",
+  lastName: "lastName",
+  jobTitle: "jobTitle",
+  phoneNumber: "phoneNumber",
+  email: "email",
+  company: "company",
+  image: "image",
+  logo: "logo",
+  note: "note",
+  banner: "banner",
+  profile_img: "profile_img"
+};
+var SocialLinksScalarFieldEnum = {
+  id: "id",
+  cardId: "cardId",
+  links: "links"
+};
+var CardScanScalarFieldEnum = {
+  id: "id",
+  cardId: "cardId",
+  ip: "ip",
+  userAgent: "userAgent",
+  source: "source",
+  latitude: "latitude",
+  longitude: "longitude",
+  city: "city",
+  country: "country",
+  banner: "banner",
+  profile_img: "profile_img",
+  createdAt: "createdAt"
+};
+var ContactScalarFieldEnum = {
+  id: "id",
+  userId: "userId",
+  cardId: "cardId",
+  firstName: "firstName",
+  lastName: "lastName",
+  phone: "phone",
+  email: "email",
+  company: "company",
+  jobTitle: "jobTitle",
+  image: "image",
+  logo: "logo",
+  banner: "banner",
+  note: "note",
+  profile_img: "profile_img",
+  latitude: "latitude",
+  longitude: "longitude",
+  city: "city",
+  country: "country",
+  createdAt: "createdAt",
+  updatedAt: "updatedAt"
+};
+var VisitorContactShareScalarFieldEnum = {
+  id: "id",
+  ownerCardId: "ownerCardId",
+  visitorCardId: "visitorCardId",
+  ownerId: "ownerId",
+  visitorId: "visitorId",
+  status: "status",
+  latitude: "latitude",
+  longitude: "longitude",
+  city: "city",
+  country: "country",
+  createdAt: "createdAt",
+  updatedAt: "updatedAt"
+};
+var ContactRequestScalarFieldEnum = {
+  id: "id",
+  cardId: "cardId",
+  requestedBy: "requestedBy",
+  requestedTo: "requestedTo",
+  status: "status",
+  message: "message",
+  createdAt: "createdAt",
+  updatedAt: "updatedAt"
+};
+var SortOrder = {
+  asc: "asc",
+  desc: "desc"
+};
+var NullableJsonNullValueInput = {
+  DbNull: DbNull2,
+  JsonNull: JsonNull2
+};
+var QueryMode = {
+  default: "default",
+  insensitive: "insensitive"
+};
+var NullsOrder = {
+  first: "first",
+  last: "last"
+};
+var JsonNullValueFilter = {
+  DbNull: DbNull2,
+  JsonNull: JsonNull2,
+  AnyNull: AnyNull2
+};
 var defineExtension = runtime2.Extensions.defineExtension;
 
 // generated/prisma/client.ts
 var PrismaClient = getPrismaClientClass();
+
+// src/lib/logger.ts
+import pino from "pino";
+var isDevelopment = process.env.NODE_ENV !== "production";
+var loggerConfig = {
+  // Log level: 'debug' | 'info' | 'warn' | 'error'
+  // Can be overridden with LOG_LEVEL environment variable
+  level: process.env.LOG_LEVEL || (isDevelopment ? "debug" : "info"),
+  // Base logger configuration
+  base: {
+    env: process.env.NODE_ENV
+  },
+  // Formatters
+  formatters: {
+    level: (label) => {
+      return { level: label };
+    }
+  },
+  // Serializers for errors, requests, responses
+  serializers: {
+    err: pino.stdSerializers.err,
+    error: pino.stdSerializers.err,
+    req: pino.stdSerializers.req,
+    res: pino.stdSerializers.res
+  }
+};
+if (isDevelopment) {
+  loggerConfig.transport = {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+      translateTime: "SYS:standard",
+      ignore: "pid,hostname",
+      singleLine: false,
+      messageFormat: "{msg}",
+      errorLikeObjectKeys: ["err", "error"]
+    }
+  };
+}
+var pinoLogger = pino(loggerConfig);
+var Logger = class {
+  info(message, data) {
+    if (data && typeof data === "object") {
+      pinoLogger.info(data, message);
+    } else if (data) {
+      pinoLogger.info({ data }, message);
+    } else {
+      pinoLogger.info(message);
+    }
+  }
+  warn(message, data) {
+    if (data && typeof data === "object") {
+      pinoLogger.warn(data, message);
+    } else if (data) {
+      pinoLogger.warn({ data }, message);
+    } else {
+      pinoLogger.warn(message);
+    }
+  }
+  error(message, error, data) {
+    if (error instanceof Error) {
+      if (data && typeof data === "object") {
+        pinoLogger.error({ err: error, ...data }, message);
+      } else if (data) {
+        pinoLogger.error({ err: error, data }, message);
+      } else {
+        pinoLogger.error({ err: error }, message);
+      }
+    } else if (error) {
+      if (data && typeof data === "object") {
+        pinoLogger.error({ ...error, ...data }, message);
+      } else if (data) {
+        pinoLogger.error({ ...error, data }, message);
+      } else {
+        pinoLogger.error(error, message);
+      }
+    } else {
+      if (data && typeof data === "object") {
+        pinoLogger.error(data, message);
+      } else if (data) {
+        pinoLogger.error({ data }, message);
+      } else {
+        pinoLogger.error(message);
+      }
+    }
+  }
+  debug(message, data) {
+    if (isDevelopment) {
+      if (data && typeof data === "object") {
+        pinoLogger.debug(data, message);
+      } else if (data) {
+        pinoLogger.debug({ data }, message);
+      } else {
+        pinoLogger.debug(message);
+      }
+    }
+  }
+};
+var logger = new Logger();
 
 // src/lib/prisma.ts
 var connectionString = process.env.DATABASE_URL;
@@ -67,7 +403,7 @@ if (!connectionString) {
   const error = new Error(
     "DATABASE_URL environment variable is not set. Please ensure DATABASE_URL is configured in your environment variables."
   );
-  console.error("\u274C Prisma initialization error:", error.message);
+  logger.error("Prisma initialization error", error);
   throw error;
 }
 var adapter;
@@ -76,7 +412,7 @@ try {
   adapter = new PrismaPg({ connectionString });
   prisma = new PrismaClient({ adapter });
 } catch (error) {
-  console.error("\u274C Failed to initialize Prisma client:", error);
+  logger.error("Failed to initialize Prisma client", error);
   throw new Error(
     `Prisma client initialization failed: ${error instanceof Error ? error.message : String(error)}`
   );
@@ -84,6 +420,150 @@ try {
 
 // src/lib/auth.ts
 import { phoneNumber } from "better-auth/plugins";
+
+// src/lib/twilio.ts
+import twilio from "twilio";
+var getTwilioStatus = () => {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const phoneNumber2 = process.env.TWILIO_PHONE_NUMBER;
+  const verifyServiceSid = process.env.TWILIO_VERIFY_SERVICE_SID;
+  return {
+    configured: !!(accountSid && authToken && phoneNumber2),
+    hasAccountSid: !!accountSid,
+    hasAuthToken: !!authToken,
+    hasPhoneNumber: !!phoneNumber2,
+    hasVerifyServiceSid: !!verifyServiceSid,
+    phoneNumber: phoneNumber2 || "Not set",
+    verifyServiceSid: verifyServiceSid || "Not set"
+  };
+};
+var getTwilioClient = () => {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  if (!accountSid || !authToken) {
+    logger.warn("Twilio credentials not found. SMS will not be sent.", {
+      missing: {
+        accountSid: !accountSid ? "TWILIO_ACCOUNT_SID" : null,
+        authToken: !authToken ? "TWILIO_AUTH_TOKEN" : null
+      }
+    });
+    return null;
+  }
+  return twilio(accountSid, authToken);
+};
+var formatBangladeshPhoneNumber = (phone) => {
+  let cleaned = phone.replace(/[\s\-\(\)]/g, "");
+  if (cleaned.startsWith("0")) {
+    cleaned = cleaned.substring(1);
+  }
+  if (cleaned.startsWith("880")) {
+    return "+" + cleaned;
+  } else if (cleaned.startsWith("1") && cleaned.length === 10) {
+    return "+880" + cleaned;
+  } else if (cleaned.startsWith("+880")) {
+    return cleaned;
+  }
+  if (cleaned.length === 10 && cleaned.startsWith("1")) {
+    return "+880" + cleaned;
+  }
+  return cleaned;
+};
+var formatUSAPhoneNumber = (phone) => {
+  let cleaned = phone.replace(/[\s\-\(\)]/g, "");
+  if (cleaned.startsWith("1") && cleaned.length === 11) {
+    return "+" + cleaned;
+  } else if (cleaned.length === 10 && /^\d+$/.test(cleaned)) {
+    return "+1" + cleaned;
+  } else if (cleaned.startsWith("+1")) {
+    return cleaned;
+  }
+  return cleaned;
+};
+var formatPhoneNumber = (phone) => {
+  let cleaned = phone.replace(/[\s\-\(\)]/g, "");
+  if (cleaned.startsWith("+880")) {
+    return formatBangladeshPhoneNumber(cleaned);
+  }
+  if (cleaned.startsWith("+1")) {
+    return formatUSAPhoneNumber(cleaned);
+  }
+  if (cleaned.startsWith("0") && cleaned.length === 11) {
+    return formatBangladeshPhoneNumber(cleaned);
+  }
+  if (cleaned.startsWith("880") && cleaned.length === 13) {
+    return formatBangladeshPhoneNumber(cleaned);
+  }
+  if (cleaned.length === 10 && /^\d+$/.test(cleaned)) {
+    return formatUSAPhoneNumber(cleaned);
+  }
+  if (cleaned.length === 11 && cleaned.startsWith("1")) {
+    return formatUSAPhoneNumber(cleaned);
+  }
+  if (cleaned.startsWith("+")) {
+    return cleaned;
+  }
+  return "+" + cleaned;
+};
+var sendSMS = async (to, message) => {
+  const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+  try {
+    const client = getTwilioClient();
+    if (!client) {
+      logger.warn("Twilio client not initialized. SMS not sent.");
+      return false;
+    }
+    if (!fromNumber) {
+      logger.error("TWILIO_PHONE_NUMBER not set in environment variables");
+      return false;
+    }
+    const formattedPhone = formatPhoneNumber(to);
+    logger.debug("Phone number formatted", {
+      original: to,
+      formatted: formattedPhone
+    });
+    const result = await client.messages.create({
+      body: message,
+      from: fromNumber,
+      to: formattedPhone
+    });
+    logger.info("SMS sent successfully", {
+      sid: result.sid,
+      to: formattedPhone,
+      status: result.status
+    });
+    return true;
+  } catch (error) {
+    const errorData = {
+      code: error.code,
+      status: error.status,
+      to,
+      from: fromNumber || "Not set"
+    };
+    if (error.code === 21211) {
+      errorData.note = "Invalid phone number format. USA format: +12086269799 or 2086269799. Bangladesh format: +8801712345678 or 01712345678";
+    } else if (error.code === 21608) {
+      errorData.note = "Twilio phone number not verified. Check your Twilio account.";
+    } else if (error.code === 20003) {
+      errorData.note = "Invalid credentials. Check TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN.";
+    }
+    logger.error("Error sending SMS via Twilio", error, errorData);
+    return false;
+  }
+};
+var VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID || "VAc66c779f03a7c204d05b7a429787deec";
+var sendOTPCode = async (phoneNumber2, code) => {
+  const formatted = formatPhoneNumber(phoneNumber2);
+  const isBangladesh = formatted.startsWith("+880");
+  const message = isBangladesh ? `\u0986\u09AA\u09A8\u09BE\u09B0 verification code: ${code}
+
+\u098F\u0987 code \u09E7\u09E6 \u09AE\u09BF\u09A8\u09BF\u099F\u09C7\u09B0 \u09AE\u09A7\u09CD\u09AF\u09C7 expire \u09B9\u09AC\u09C7\u0964` : `Your verification code is: ${code}
+
+This code will expire in 10 minutes.`;
+  return await sendSMS(phoneNumber2, message);
+};
+
+// src/lib/auth.ts
 var getTrustedOrigins = () => {
   const envOrigins = process.env.AUTH_TRUSTED_ORIGINS;
   let origins = [];
@@ -96,18 +576,14 @@ var getTrustedOrigins = () => {
       "http://127.0.0.1:3004",
       "http://10.26.38.18:3004",
       // Mobile app origin (update IP if it changes)
-      "https://hwy-editorial-updates-talked.trycloudflare.com",
-      // Cloudflare tunnel
-      "https://seems-alive-launch-review.trycloudflare.com",
-      // Expo tunnel
       "https://contact-x-api.vercel.app",
-      // Production Vercel URL
+      // Production Vercel URL - mobile apps use this as origin
       process.env.BETTER_AUTH_URL,
       process.env.FRONTEND_URL,
       process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null
     ].filter(Boolean);
   }
-  console.log("\u{1F510} Better Auth Trusted Origins:", origins);
+  logger.info("Better Auth Trusted Origins", { origins });
   return origins;
 };
 var trustedOriginsList = getTrustedOrigins();
@@ -129,7 +605,20 @@ var getBaseURL = () => {
 var auth;
 try {
   const baseURL = getBaseURL();
-  console.log("\u{1F517} Better Auth Base URL:", baseURL);
+  logger.info("Better Auth Base URL", { baseURL });
+  const twilioStatus = getTwilioStatus();
+  if (twilioStatus.configured) {
+    logger.info("Twilio is configured and ready", {
+      note: "Using manual SMS - Better Auth generates the code"
+    });
+  } else {
+    logger.warn("Twilio is not fully configured", {
+      hasAccountSid: twilioStatus.hasAccountSid,
+      hasAuthToken: twilioStatus.hasAuthToken,
+      hasPhoneNumber: twilioStatus.hasPhoneNumber,
+      note: "OTP codes will be logged to console instead of sent via SMS"
+    });
+  }
   auth = betterAuth({
     trustedOrigins: trustedOriginsList,
     baseURL,
@@ -138,8 +627,18 @@ try {
     }),
     plugins: [
       phoneNumber({
-        sendOTP: ({ phoneNumber: phoneNumber2, code }, ctx) => {
-          console.log("otp ", code);
+        sendOTP: async ({ phoneNumber: phoneNumber2, code }, ctx) => {
+          logger.info("Sending OTP", { phoneNumber: phoneNumber2 });
+          logger.debug("OTP Code (Better Auth generated)", { code });
+          const sent = await sendOTPCode(phoneNumber2, code);
+          if (sent) {
+            logger.info("OTP sent successfully via SMS", { phoneNumber: phoneNumber2 });
+          } else {
+            logger.warn("Failed to send OTP via SMS, code logged to console", {
+              phoneNumber: phoneNumber2,
+              code
+            });
+          }
         },
         signUpOnVerification: {
           getTempEmail: (phone) => `${phone}@temp.yoursite.com`,
@@ -149,7 +648,7 @@ try {
     ]
   });
 } catch (error) {
-  console.error("\u274C Failed to initialize Better Auth:", error);
+  logger.error("Failed to initialize Better Auth", error);
   throw new Error(
     `Better Auth initialization failed: ${error instanceof Error ? error.message : String(error)}. Please check your DATABASE_URL and BETTER_AUTH_SECRET environment variables.`
   );
@@ -181,12 +680,14 @@ import { v2 as cloudinary } from "cloudinary";
 // src/config/index.ts
 import dotenv from "dotenv";
 import path from "path";
-if (process.env.NODE_ENV !== "production") {
+var env = process.env.NODE_ENV || "development";
+if (env !== "production") {
   dotenv.config({
-    path: path.join(process.cwd(), ".env")
+    path: path.join(process.cwd(), `.env.${env}`)
   });
 }
 var config2 = {
+  env,
   port: process.env.PORT || "3004",
   authOrigin: process.env.AUTH_TRUSTED_ORIGINS || "",
   databaseUrl: process.env.DATABASE_URL || "",
@@ -275,21 +776,57 @@ var getAllCard = async (userId) => {
   if (!userId) {
     throw new Error("userId is required");
   }
-  const cards = await prisma.card.findMany({
-    where: { userId },
-    include: {
-      personalInfo: true,
-      socialLinks: true,
-      contacts: true
-    },
-    orderBy: {
-      createdAt: "desc"
+  try {
+    logger.debug("Fetching cards for userId", { userId });
+    const cards = await prisma.card.findMany({
+      where: { userId },
+      orderBy: {
+        createdAt: "desc"
+      }
+    });
+    logger.debug("Found cards (basic)", { count: cards.length });
+    if (!cards || cards.length === 0) {
+      logger.debug("No cards found for userId", { userId });
+      return [];
     }
-  });
-  if (!cards || cards.length === 0) {
-    return [];
+    const cardsWithRelations = await Promise.all(
+      cards.map(async (card) => {
+        const result = { ...card };
+        try {
+          const personalInfo = await prisma.personalInfo.findUnique({
+            where: { cardId: card.id }
+          });
+          result.personalInfo = personalInfo;
+        } catch (e) {
+          logger.warn(`personalInfo fetch failed for card`, e, { cardId: card.id });
+          result.personalInfo = null;
+        }
+        try {
+          const socialLinks = await prisma.socialLinks.findUnique({
+            where: { cardId: card.id }
+          });
+          result.socialLinks = socialLinks;
+        } catch (e) {
+          logger.warn(`socialLinks fetch failed for card`, e, { cardId: card.id });
+          result.socialLinks = null;
+        }
+        return result;
+      })
+    );
+    logger.debug("Cards with relations", { count: cardsWithRelations.length });
+    if (cardsWithRelations.length > 0) {
+      logger.debug("Card IDs", { cardIds: cardsWithRelations.map((c) => c.id) });
+    }
+    return cardsWithRelations;
+  } catch (error) {
+    logger.error("Error fetching cards", error, {
+      userId
+    });
+    if (error.message?.includes("column") || error.message?.includes("does not exist") || error.message?.includes("(not available)") || error.code === "P2001") {
+      return [];
+    }
+    throw error;
   }
-  return cards;
 };
 var updateCard = async (cardId, userId, payload) => {
   if (!cardId || !userId) {
@@ -467,7 +1004,7 @@ var handleFileUpload = async (file, folder) => {
     const url = await uploadImageToCloudinary(file.buffer, folder);
     return url;
   } catch (error) {
-    console.error(`\u274C Failed to upload ${folder}:`, error);
+    logger.error(`Failed to upload ${folder}`, error);
     throw new Error(`Failed to upload ${folder}: ${error.message}`);
   }
 };
@@ -596,7 +1133,7 @@ var createCard2 = async (req, res, next) => {
       data: result
     });
   } catch (error) {
-    console.error("\u274C Create card error:", error);
+    logger.error("Create card error", error);
     if (!res.headersSent) {
       res.status(400).json({
         success: false,
@@ -607,13 +1144,26 @@ var createCard2 = async (req, res, next) => {
   }
 };
 var getAllCard2 = async (req, res) => {
-  const userId = req.user?.id;
-  const result = await cardServices.getAllCard(userId);
-  res.status(200).json({
-    success: true,
-    message: "Card details",
-    data: result
-  });
+  try {
+    const userId = req.user?.id;
+    logger.debug("getAllCard called", { userId, user: req.user });
+    if (!userId) {
+      logger.warn("No userId found in request");
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    const result = await cardServices.getAllCard(userId);
+    logger.debug("getAllCard result", { count: result.length });
+    res.status(200).json({
+      success: true,
+      message: "Card details",
+      data: result
+    });
+  } catch (error) {
+    logger.error("Error in getAllCard controller", error, {
+      userId: req.user?.id
+    });
+    res.status(200).json({ success: true, data: [] });
+  }
 };
 var updateCard2 = async (req, res, next) => {
   try {
@@ -843,7 +1393,7 @@ var updateCard2 = async (req, res, next) => {
       data: result
     });
   } catch (error) {
-    console.error("\u274C Update card error:", error);
+    logger.error("Update card error", error);
     if (!res.headersSent) {
       res.status(400).json({
         success: false,
@@ -873,7 +1423,7 @@ var deleteCard2 = async (req, res, next) => {
         }
       }
     } catch (error) {
-      console.log("Card not found for image cleanup, continuing with deletion");
+      logger.debug("Card not found for image cleanup, continuing with deletion");
     }
     await cardServices.deleteCard(id, req.user.id);
     res.status(200).json({
@@ -923,7 +1473,7 @@ var uploadCardImage = async (req, res, next) => {
       // Also include imageUrl for compatibility
     });
   } catch (error) {
-    console.error("\u274C Upload card image error:", error);
+    logger.error("Upload card image error", error);
     if (!res.headersSent) {
       res.status(400).json({
         success: false,
@@ -1422,20 +1972,25 @@ var saveContact = async (userId, cardId, data) => {
         // customer's card ID
         `${ownerName} wants to save your contact info`
       );
-      console.log("\u2705 Reverse permission request created automatically");
+      logger.info("Reverse permission request created automatically");
     } catch (error) {
-      console.error("\u26A0\uFE0F Failed to create reverse permission request:", error.message);
+      logger.warn("Failed to create reverse permission request", error);
     }
   }
   return { alreadySaved: false, contact };
 };
 var getAllContacts = async (userId) => {
   if (!userId) throw new Error("userId is required");
-  const contacts = await prisma.contact.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" }
-  });
-  return contacts || [];
+  try {
+    const contacts = await prisma.contact.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" }
+    });
+    return contacts || [];
+  } catch (error) {
+    logger.warn("Error fetching contacts, returning empty array", error);
+    return [];
+  }
 };
 var updateContact = async (contactId, userId, data) => {
   const existing = await prisma.contact.findFirst({
@@ -1560,50 +2115,62 @@ var requestContactPermission = async (requesterId, cardId, message) => {
 };
 var getReceivedRequests = async (userId) => {
   if (!userId) throw new Error("userId is required");
-  if (!prisma.contactRequest) {
-    throw new Error("ContactRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
-  }
-  const requests = await prisma.contactRequest.findMany({
-    where: {
-      requestedTo: userId,
-      status: "pending"
-    },
-    include: {
-      requestedByUser: {
-        select: { id: true, name: true, email: true, image: true }
+  try {
+    if (!prisma.contactRequest) {
+      logger.warn("ContactRequest model not found, returning empty array");
+      return [];
+    }
+    const requests = await prisma.contactRequest.findMany({
+      where: {
+        requestedTo: userId,
+        status: "pending"
       },
-      card: {
-        include: {
-          personalInfo: true
+      include: {
+        requestedByUser: {
+          select: { id: true, name: true, email: true, image: true }
+        },
+        card: {
+          include: {
+            personalInfo: true
+          }
         }
-      }
-    },
-    orderBy: { createdAt: "desc" }
-  });
-  return requests || [];
+      },
+      orderBy: { createdAt: "desc" }
+    });
+    return requests || [];
+  } catch (error) {
+    logger.warn("Error fetching received requests, returning empty array", error);
+    return [];
+  }
 };
 var getSentRequests = async (userId) => {
   if (!userId) throw new Error("userId is required");
-  if (!prisma.contactRequest) {
-    throw new Error("ContactRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
-  }
-  const requests = await prisma.contactRequest.findMany({
-    where: {
-      requestedBy: userId
-    },
-    include: {
-      card: {
-        include: {
-          personalInfo: true
+  try {
+    if (!prisma.contactRequest) {
+      logger.warn("ContactRequest model not found, returning empty array");
+      return [];
+    }
+    const requests = await prisma.contactRequest.findMany({
+      where: {
+        requestedBy: userId
+      },
+      include: {
+        card: {
+          include: {
+            personalInfo: true
+          }
+        },
+        requestedToUser: {
+          select: { id: true, name: true, email: true, image: true }
         }
       },
-      requestedToUser: {
-        select: { id: true, name: true, email: true, image: true }
-      }
-    },
-    orderBy: { createdAt: "desc" }
-  });
-  return requests || [];
+      orderBy: { createdAt: "desc" }
+    });
+    return requests || [];
+  } catch (error) {
+    logger.warn("Error fetching sent requests, returning empty array", error);
+    return [];
+  }
 };
 var approveRequest = async (requestId, cardOwnerId) => {
   if (!requestId) throw new Error("requestId is required");
@@ -1675,11 +2242,11 @@ var approveRequest = async (requestId, cardOwnerId) => {
           city: customerContact.city || "",
           country: customerContact.country || ""
         };
-        console.log("\u{1F4CD} Using scan location from customer contact:", scanLocation);
+        logger.debug("Using scan location from customer contact", { scanLocation });
       }
     }
   } catch (error) {
-    console.error("\u26A0\uFE0F Could not get scan location from customer contact:", error.message);
+    logger.warn("Could not get scan location from customer contact", error);
   }
   let normalizedEmail = "";
   if (personalInfo.email) {
@@ -1823,12 +2390,12 @@ var saveContactController = async (req, res, next) => {
       });
     }
     const ip = getClientIP(req);
-    console.log("\u{1F310} Client IP for contact save:", ip);
+    logger.debug("Client IP for contact save", { ip });
     if (ip && (!contactData.latitude || !contactData.city)) {
-      console.log("\u{1F50D} Fetching location from IP for contact:", ip);
+      logger.debug("Fetching location from IP for contact", { ip });
       const ipLocation = await getLocationFromIP(ip, req);
       if (ipLocation) {
-        console.log("\u2705 Location fetched for contact:", ipLocation);
+        logger.debug("Location fetched for contact", { ipLocation });
         contactData = {
           ...contactData,
           latitude: contactData.latitude ?? ipLocation.latitude ?? 0,
@@ -1838,7 +2405,7 @@ var saveContactController = async (req, res, next) => {
         };
       }
     } else if (contactData.latitude || contactData.city) {
-      console.log("\u{1F4CD} Using provided scan location for contact:", {
+      logger.debug("Using provided scan location for contact", {
         latitude: contactData.latitude,
         longitude: contactData.longitude,
         city: contactData.city,
@@ -1846,7 +2413,7 @@ var saveContactController = async (req, res, next) => {
       });
     }
     if (!contactData.city && !contactData.country) {
-      console.log("\u26A0\uFE0F No location data for contact, using fallback");
+      logger.warn("No location data for contact, using fallback");
       const fallback = getFallbackLocation();
       contactData.city = contactData.city || fallback.city;
       contactData.country = contactData.country || fallback.country;
@@ -1865,14 +2432,14 @@ var saveContactController = async (req, res, next) => {
       data: result.contact
     });
   } catch (error) {
-    console.error("\u274C Save contact controller error:", error);
+    logger.error("Save contact controller error", error);
     if (!res.headersSent) {
       return res.status(400).json({
         success: false,
         message: error.message || "Something went wrong"
       });
     }
-    console.error("Unhandled error after response:", error);
+    logger.error("Unhandled error after response", error);
   }
 };
 var getAllContactsController = async (req, res, next) => {
@@ -1884,7 +2451,8 @@ var getAllContactsController = async (req, res, next) => {
     const contacts = await contactServices.getAllContacts(userId);
     res.status(200).json({ success: true, data: contacts });
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    logger.warn("Error in getAllContactsController", error);
+    res.status(200).json({ success: true, data: [] });
   }
 };
 var updateContactController = async (req, res, next) => {
@@ -1893,12 +2461,12 @@ var updateContactController = async (req, res, next) => {
     const { contactId } = req.params;
     let updateData = req.body;
     const ip = getClientIP(req);
-    console.log("\u{1F310} Client IP for contact update:", ip);
+    logger.debug("Client IP for contact update", { ip });
     if (ip && (!updateData.latitude || !updateData.city)) {
-      console.log("\u{1F50D} Fetching location from IP for contact update:", ip);
+      logger.debug("Fetching location from IP for contact update", { ip });
       const ipLocation = await getLocationFromIP(ip, req);
       if (ipLocation) {
-        console.log("\u2705 Location fetched for contact update:", ipLocation);
+        logger.debug("Location fetched for contact update", { ipLocation });
         updateData = {
           ...updateData,
           latitude: updateData.latitude ?? ipLocation.latitude ?? 0,
@@ -1909,7 +2477,7 @@ var updateContactController = async (req, res, next) => {
       }
     }
     if (!updateData.city && !updateData.country) {
-      console.log("\u26A0\uFE0F No location data for contact update, using fallback");
+      logger.warn("No location data for contact update, using fallback");
       const fallback = getFallbackLocation();
       updateData.city = updateData.city || fallback.city;
       updateData.country = updateData.country || fallback.country;
@@ -1967,7 +2535,7 @@ var requestContactPermissionController = async (req, res, next) => {
       data: request
     });
   } catch (error) {
-    console.error("\u274C Request contact permission error:", error);
+    logger.error("Request contact permission error", error);
     if (!res.headersSent) {
       return res.status(400).json({
         success: false,
@@ -1989,14 +2557,13 @@ var getReceivedRequestsController = async (req, res, next) => {
       data: requests
     });
   } catch (error) {
-    console.error("\u274C Get received requests error:", error);
+    logger.warn("Error in getReceivedRequestsController", error);
     if (!res.headersSent) {
-      return res.status(400).json({
-        success: false,
-        message: error.message || "Something went wrong"
+      return res.status(200).json({
+        success: true,
+        data: []
       });
     }
-    next(error);
   }
 };
 var getSentRequestsController = async (req, res, next) => {
@@ -2011,14 +2578,13 @@ var getSentRequestsController = async (req, res, next) => {
       data: requests
     });
   } catch (error) {
-    console.error("\u274C Get sent requests error:", error);
+    logger.warn("Error in getSentRequestsController", error);
     if (!res.headersSent) {
-      return res.status(400).json({
-        success: false,
-        message: error.message || "Something went wrong"
+      return res.status(200).json({
+        success: true,
+        data: []
       });
     }
-    next(error);
   }
 };
 var approveRequestController = async (req, res, next) => {
@@ -2038,7 +2604,7 @@ var approveRequestController = async (req, res, next) => {
       data: result.contact
     });
   } catch (error) {
-    console.error("\u274C Approve request error:", error);
+    logger.error("Approve request error", error);
     if (!res.headersSent) {
       return res.status(400).json({
         success: false,
@@ -2065,7 +2631,7 @@ var rejectRequestController = async (req, res, next) => {
       data: request
     });
   } catch (error) {
-    console.error("\u274C Reject request error:", error);
+    logger.error("Reject request error", error);
     if (!res.headersSent) {
       return res.status(400).json({
         success: false,
@@ -2095,7 +2661,7 @@ var createReversePermissionRequestController = async (req, res, next) => {
       data: request
     });
   } catch (error) {
-    console.error("\u274C Create reverse permission request error:", error);
+    logger.error("Create reverse permission request error", error);
     if (!res.headersSent) {
       return res.status(400).json({
         success: false,
@@ -2363,17 +2929,156 @@ var notFoundRoute = (req, res) => {
 };
 
 // src/middleware/globalErrorHandler.ts
+var handlePrismaError = (error) => {
+  if (error instanceof prismaNamespace_exports.PrismaClientKnownRequestError) {
+    switch (error.code) {
+      case "P2002":
+        const target = error.meta?.target || [];
+        const field = Array.isArray(target) ? target.join(", ") : target;
+        return {
+          statusCode: 409,
+          message: `A record with this ${field} already exists.`,
+          code: "UNIQUE_CONSTRAINT_VIOLATION"
+        };
+      case "P2025":
+        return {
+          statusCode: 404,
+          message: "Record not found.",
+          code: "RECORD_NOT_FOUND"
+        };
+      case "P2003":
+        return {
+          statusCode: 400,
+          message: "Invalid reference. Related record does not exist.",
+          code: "FOREIGN_KEY_VIOLATION"
+        };
+      case "P2000":
+        return {
+          statusCode: 400,
+          message: "Invalid value provided.",
+          code: "INVALID_VALUE"
+        };
+      case "P2001":
+        return {
+          statusCode: 400,
+          message: "Value is too long for the field.",
+          code: "VALUE_TOO_LONG"
+        };
+      case "P1001":
+        return {
+          statusCode: 503,
+          message: "Database connection failed. Please try again later.",
+          code: "DATABASE_CONNECTION_ERROR"
+        };
+      case "P1008":
+      case "P2024":
+        return {
+          statusCode: 504,
+          message: "Database query timeout. Please try again.",
+          code: "DATABASE_TIMEOUT"
+        };
+      default:
+        return {
+          statusCode: 500,
+          message: `Database error: ${error.message}`,
+          code: error.code
+        };
+    }
+  }
+  if (error instanceof prismaNamespace_exports.PrismaClientValidationError) {
+    return {
+      statusCode: 400,
+      message: "Invalid data provided. Please check your input.",
+      code: "VALIDATION_ERROR"
+    };
+  }
+  if (error instanceof prismaNamespace_exports.PrismaClientInitializationError) {
+    return {
+      statusCode: 503,
+      message: "Database connection failed. Please check your database configuration.",
+      code: "DATABASE_INITIALIZATION_ERROR"
+    };
+  }
+  if (error instanceof prismaNamespace_exports.PrismaClientRustPanicError) {
+    return {
+      statusCode: 500,
+      message: "Database engine error. Please contact support.",
+      code: "DATABASE_ENGINE_ERROR"
+    };
+  }
+  if (error.code && typeof error.code === "string" && error.code.startsWith("P")) {
+    return {
+      statusCode: 500,
+      message: `Database error: ${error.message || "Unknown database error"}`,
+      code: error.code
+    };
+  }
+  return null;
+};
 var globalErrorHandler = (err, req, res, next) => {
   if (res.headersSent) {
-    console.error("Error after response sent:", err);
+    logger.error("Error after response sent", err);
     return next(err);
   }
-  console.error(err.stack);
-  const statuscode = err.statusCode || 500;
+  logger.error("Error occurred", err, {
+    code: err.code,
+    path: req.path,
+    method: req.method,
+    prismaError: err instanceof prismaNamespace_exports.PrismaClientKnownRequestError
+  });
+  const prismaError = handlePrismaError(err);
+  if (prismaError) {
+    return res.status(prismaError.statusCode).json({
+      success: false,
+      message: prismaError.message,
+      code: prismaError.code,
+      ...process.env.NODE_ENV === "development" && {
+        details: err.meta,
+        stack: err.stack
+      }
+    });
+  }
+  if (err.name === "ValidationError" || err.name === "ZodError") {
+    return res.status(400).json({
+      success: false,
+      message: err.message || "Validation error",
+      code: "VALIDATION_ERROR",
+      ...process.env.NODE_ENV === "development" && {
+        details: err.errors || err.issues
+      }
+    });
+  }
+  if (err.statusCode === 401 || err.name === "UnauthorizedError") {
+    return res.status(401).json({
+      success: false,
+      message: err.message || "Unauthorized",
+      code: "UNAUTHORIZED"
+    });
+  }
+  if (err.statusCode === 404 || err.name === "NotFoundError") {
+    return res.status(404).json({
+      success: false,
+      message: err.message || "Resource not found",
+      code: "NOT_FOUND"
+    });
+  }
+  if (err.statusCode) {
+    return res.status(err.statusCode).json({
+      success: false,
+      message: err.message || "An error occurred",
+      code: err.code || "APPLICATION_ERROR"
+    });
+  }
+  const statusCode = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
-  res.status(statuscode).json({
+  res.status(statusCode).json({
     success: false,
-    message
+    message: process.env.NODE_ENV === "production" ? "An unexpected error occurred. Please try again later." : message,
+    code: "INTERNAL_SERVER_ERROR",
+    ...process.env.NODE_ENV === "development" && {
+      stack: err.stack,
+      details: err
+    }
   });
 };
 
@@ -2394,15 +3099,7 @@ var allowedOrigins = [
   // ← Expo dev server
   "http://10.153.79.18:8081",
   // ← Alternative Expo URL
-  // Cloudflare tunnel URLs
-  "https://hwy-editorial-updates-talked.trycloudflare.com",
-  // ← API Server tunnel
-  "https://seems-alive-launch-review.trycloudflare.com",
-  // ← Expo app tunnel
-  "https://ladies-sunset-bra-opportunities.trycloudflare.com",
-  // ← পুরানো tunnel
-  // Vercel production URL
-  "https://contact-x-api.vercel.app",
+  "https://contact-x-api.vercel.app/api",
   // ← Production Vercel URL
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
   "http://10.108.105.18:3004",
@@ -2416,7 +3113,7 @@ app.use(cors({
     if (allowedOrigins.includes(origin) || process.env.NODE_ENV !== "production") {
       callback(null, true);
     } else {
-      console.log("CORS blocked origin:", origin);
+      logger.warn("CORS blocked origin", { origin });
       callback(new Error("Not allowed by CORS"));
     }
   },
@@ -2449,13 +3146,14 @@ var HOST = "0.0.0.0";
 async function start() {
   try {
     await prisma.$connect();
-    console.log("\u2705 Connected to database");
+    logger.info("Connected to database");
     app.listen(PORT, HOST, () => {
-      console.log(`\u{1F680} Server running on http://${HOST}:${PORT}`);
-      console.log(`Local access: http://localhost:${PORT}`);
+      logger.info(`Server running on http://${HOST}:${PORT}`, {
+        localAccess: `http://localhost:${PORT}`
+      });
     });
   } catch (error) {
-    console.error("\u274C Failed to start server:", error);
+    logger.error("Failed to start server", error);
     process.exit(1);
   }
 }

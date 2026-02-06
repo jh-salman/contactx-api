@@ -1,5 +1,6 @@
 import { app } from "./app";
 import { prisma } from "./lib/prisma";
+import { logger } from "./lib/logger";
 
 const PORT = Number(process.env.PORT) || 3004;
 const HOST = '0.0.0.0'; // Bind to all interfaces for network access
@@ -7,14 +8,15 @@ const HOST = '0.0.0.0'; // Bind to all interfaces for network access
 async function start() {
   try {
     await prisma.$connect();
-    console.log("✅ Connected to database");
+    logger.info("Connected to database");
     
     app.listen(PORT, HOST, () => {
-      console.log(`🚀 Server running on http://${HOST}:${PORT}`);
-      console.log(`Local access: http://localhost:${PORT}`);
+      logger.info(`Server running on http://${HOST}:${PORT}`, {
+        localAccess: `http://localhost:${PORT}`
+      });
     });
   } catch (error) {
-    console.error("❌ Failed to start server:", error);
+    logger.error("Failed to start server", error);
     process.exit(1);
   }
 }

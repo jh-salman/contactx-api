@@ -1,4 +1,5 @@
 import { prisma } from "../../lib/prisma";
+import { logger } from "../../lib/logger";
 
 // Helper function to validate and normalize email
 const normalizeEmail = (email: string | undefined): string => {
@@ -127,10 +128,10 @@ const saveContact = async (
                 customerCardId, // customer's card ID
                 `${ownerName} wants to save your contact info`
             );
-            console.log('✅ Reverse permission request created automatically');
+            logger.info('Reverse permission request created automatically');
         } catch (error: any) {
             // Don't fail the contact save if reverse request fails
-            console.error('⚠️ Failed to create reverse permission request:', error.message);
+            logger.warn('Failed to create reverse permission request', error);
         }
     }
 
@@ -150,7 +151,7 @@ export const getAllContacts = async (userId: string) => {
         return contacts || [];
     } catch (error: any) {
         // Handle database errors gracefully (table/column doesn't exist, etc.)
-        console.warn('⚠️ Error fetching contacts, returning empty array:', error.message);
+        logger.warn('Error fetching contacts, returning empty array', error);
         return [];
     }
 };
@@ -343,7 +344,7 @@ const getReceivedRequests = async (userId: string) => {
     try {
         // Check if contactRequest model is available in Prisma client
         if (!prisma.contactRequest) {
-            console.warn('⚠️ ContactRequest model not found, returning empty array');
+            logger.warn('ContactRequest model not found, returning empty array');
             return [];
         }
 
@@ -368,7 +369,7 @@ const getReceivedRequests = async (userId: string) => {
         return requests || [];
     } catch (error: any) {
         // Handle database errors gracefully (table doesn't exist, etc.)
-        console.warn('⚠️ Error fetching received requests, returning empty array:', error.message);
+        logger.warn('Error fetching received requests, returning empty array', error);
         return [];
     }
 };
@@ -379,7 +380,7 @@ const getSentRequests = async (userId: string) => {
     try {
         // Check if contactRequest model is available in Prisma client
         if (!prisma.contactRequest) {
-            console.warn('⚠️ ContactRequest model not found, returning empty array');
+            logger.warn('ContactRequest model not found, returning empty array');
             return [];
         }
 
@@ -403,7 +404,7 @@ const getSentRequests = async (userId: string) => {
         return requests || [];
     } catch (error: any) {
         // Handle database errors gracefully (table doesn't exist, etc.)
-        console.warn('⚠️ Error fetching sent requests, returning empty array:', error.message);
+        logger.warn('Error fetching sent requests, returning empty array', error);
         return [];
     }
 };
@@ -507,11 +508,11 @@ const approveRequest = async (requestId: string, cardOwnerId: string) => {
                     city: customerContact.city || "",
                     country: customerContact.country || "",
                 };
-                console.log('📍 Using scan location from customer contact:', scanLocation);
+                logger.debug('Using scan location from customer contact', { scanLocation });
             }
         }
     } catch (error: any) {
-        console.error('⚠️ Could not get scan location from customer contact:', error.message);
+        logger.warn('Could not get scan location from customer contact', error);
         // Continue without location - will use fallback or null
     }
 

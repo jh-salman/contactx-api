@@ -1,4 +1,5 @@
 import twilio from 'twilio';
+import { logger } from './logger';
 
 // Check if Twilio is properly configured
 export const isTwilioConfigured = (): boolean => {
@@ -33,10 +34,11 @@ const getTwilioClient = () => {
   const authToken = process.env.TWILIO_AUTH_TOKEN;
   
   if (!accountSid || !authToken) {
-    console.warn('⚠️ Twilio credentials not found. SMS will not be sent.');
-    console.warn('   Missing:', {
-      accountSid: !accountSid ? 'TWILIO_ACCOUNT_SID' : null,
-      authToken: !authToken ? 'TWILIO_AUTH_TOKEN' : null,
+    logger.warn('Twilio credentials not found. SMS will not be sent.', {
+      missing: {
+        accountSid: !accountSid ? 'TWILIO_ACCOUNT_SID' : null,
+        authToken: !authToken ? 'TWILIO_AUTH_TOKEN' : null,
+      }
     });
     return null;
   }
@@ -149,19 +151,19 @@ export const sendSMS = async (to: string, message: string): Promise<boolean> => 
   try {
     const client = getTwilioClient();
     if (!client) {
-      console.warn('⚠️ Twilio client not initialized. SMS not sent.');
+      logger.warn('Twilio client not initialized. SMS not sent.');
       return false;
     }
     
     if (!fromNumber) {
-      console.error('❌ TWILIO_PHONE_NUMBER not set in environment variables');
+      logger.error('TWILIO_PHONE_NUMBER not set in environment variables');
       return false;
     }
     
     // Format phone number (supports USA and Bangladesh)
     const formattedPhone = formatPhoneNumber(to);
     
-    console.log('📱 Phone number formatted:', {
+    logger.debug('Phone number formatted', {
       original: to,
       formatted: formattedPhone
     });
@@ -172,7 +174,7 @@ export const sendSMS = async (to: string, message: string): Promise<boolean> => 
       to: formattedPhone,
     });
     
-    console.log('✅ SMS sent successfully:', {
+    logger.info('SMS sent successfully', {
       sid: result.sid,
       to: formattedPhone,
       status: result.status,
@@ -180,24 +182,23 @@ export const sendSMS = async (to: string, message: string): Promise<boolean> => 
     
     return true;
   } catch (error: any) {
-    console.error('❌ Error sending SMS via Twilio:', {
-      error: error.message,
+    const errorData: any = {
       code: error.code,
       status: error.status,
       to,
       from: fromNumber || 'Not set',
-    });
+    };
     
     // Provide helpful error messages for common issues
     if (error.code === 21211) {
-      console.error('   💡 Invalid phone number format.');
-      console.error('   💡 USA format: +12086269799 or 2086269799');
-      console.error('   💡 Bangladesh format: +8801712345678 or 01712345678');
+      errorData.note = 'Invalid phone number format. USA format: +12086269799 or 2086269799. Bangladesh format: +8801712345678 or 01712345678';
     } else if (error.code === 21608) {
-      console.error('   💡 Twilio phone number not verified. Check your Twilio account.');
+      errorData.note = 'Twilio phone number not verified. Check your Twilio account.';
     } else if (error.code === 20003) {
-      console.error('   💡 Invalid credentials. Check TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN.');
+      errorData.note = 'Invalid credentials. Check TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN.';
     }
+    
+    logger.error('Error sending SMS via Twilio', error, errorData);
     
     return false;
   }
@@ -211,7 +212,7 @@ export const sendOTPCodeViaVerify = async (phoneNumber: string): Promise<{ succe
   try {
     const client = getTwilioClient();
     if (!client) {
-      console.warn('⚠️ Twilio client not initialized. OTP not sent.');
+      logger.warn('Twilio client not initialized. OTP not sent.');
       return { success: false, error: 'Twilio client not initialized' };
     }
     
@@ -227,7 +228,7 @@ export const sendOTPCodeViaVerify = async (phoneNumber: string): Promise<{ succe
         channel: 'sms'
       });
     
-    console.log('✅ OTP sent via Twilio Verify:', {
+    logger.info('OTP sent via Twilio Verify', {
       sid: verification.sid,
       to: formattedPhone,
       status: verification.status,
@@ -235,19 +236,19 @@ export const sendOTPCodeViaVerify = async (phoneNumber: string): Promise<{ succe
     
     return { success: true, sid: verification.sid };
   } catch (error: any) {
-    console.error('❌ Error sending OTP via Twilio Verify:', {
-      error: error.message,
+    const errorData: any = {
       code: error.code,
       to: phoneNumber,
-    });
+    };
     
     // Provide helpful error messages
     if (error.code === 60200) {
-      console.error('   💡 Invalid phone number. Please use a valid phone number with country code.');
-      console.error('   💡 For testing, use a verified phone number in your Twilio account.');
+      errorData.note = 'Invalid phone number. Please use a valid phone number with country code. For testing, use a verified phone number in your Twilio account.';
     } else if (error.code === 20429) {
-      console.error('   💡 Too many requests. Please wait a moment and try again.');
+      errorData.note = 'Too many requests. Please wait a moment and try again.';
     }
+    
+    logger.error('Error sending OTP via Twilio Verify', error, errorData);
     
     return { success: false, error: error.message };
   }
@@ -258,7 +259,7 @@ export const verifyOTPCodeViaVerify = async (phoneNumber: string, code: string):
   try {
     const client = getTwilioClient();
     if (!client) {
-      console.warn('⚠️ Twilio client not initialized. OTP verification failed.');
+      logger.warn('Twilio client not initialized. OTP verification failed.');
       return { success: false, valid: false, error: 'Twilio client not initialized' };
     }
     
@@ -276,7 +277,7 @@ export const verifyOTPCodeViaVerify = async (phoneNumber: string, code: string):
     
     const isValid = verificationCheck.status === 'approved';
     
-    console.log('✅ OTP verification result:', {
+    logger.info('OTP verification result', {
       sid: verificationCheck.sid,
       status: verificationCheck.status,
       valid: isValid
@@ -284,8 +285,7 @@ export const verifyOTPCodeViaVerify = async (phoneNumber: string, code: string):
     
     return { success: true, valid: isValid };
   } catch (error: any) {
-    console.error('❌ Error verifying OTP:', {
-      error: error.message,
+    logger.error('Error verifying OTP', error, {
       code: error.code,
     });
     

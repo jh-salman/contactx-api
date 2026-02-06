@@ -1,15 +1,18 @@
 import dotenv from "dotenv";
 import path from "path";
 
-// Load environment variables
-// Only load .env file in development
-if (process.env.NODE_ENV !== 'production') {
+// Determine environment
+const env = process.env.NODE_ENV || 'development';
+
+// Load appropriate .env file
+if (env !== 'production') {
   dotenv.config({
-    path: path.join(process.cwd(), ".env")
+    path: path.join(process.cwd(), `.env.${env}`)
   });
 }
 
 export const config = {
+    env,
     port: process.env.PORT || "3004",
     authOrigin: process.env.AUTH_TRUSTED_ORIGINS || "",
     databaseUrl: process.env.DATABASE_URL || "",

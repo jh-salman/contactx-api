@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { contactServices } from "./contacts.services";
 import { getLocationFromIP, getFallbackLocation } from "../../lib/ipGeolocation";
 import { getClientIP } from "../../lib/getClientIP";
+import { logger } from "../../lib/logger";
 
 
 const saveContactController = async (req: Request, res: Response, next: any) => {
@@ -31,17 +32,17 @@ const saveContactController = async (req: Request, res: Response, next: any) => 
 
         // 4️⃣ Smart IP detection - works in dev and production
         const ip = getClientIP(req);
-        console.log('🌐 Client IP for contact save:', ip);
+        logger.debug('Client IP for contact save', { ip });
 
         // 5️⃣ Get location from IP if not provided
         // Priority: Scan location (provided) > IP location > Fallback
         if (ip && (!contactData.latitude || !contactData.city)) {
-            console.log('🔍 Fetching location from IP for contact:', ip);
+            logger.debug('Fetching location from IP for contact', { ip });
             // Pass req object for header detection
             const ipLocation = await getLocationFromIP(ip, req);
             
             if (ipLocation) {
-                console.log('✅ Location fetched for contact:', ipLocation);
+                logger.debug('Location fetched for contact', { ipLocation });
                 // Only use IP location if scan location not already provided
                 contactData = {
                     ...contactData,
@@ -52,7 +53,7 @@ const saveContactController = async (req: Request, res: Response, next: any) => 
                 };
             }
         } else if (contactData.latitude || contactData.city) {
-            console.log('📍 Using provided scan location for contact:', {
+            logger.debug('Using provided scan location for contact', {
                 latitude: contactData.latitude,
                 longitude: contactData.longitude,
                 city: contactData.city,
@@ -62,7 +63,7 @@ const saveContactController = async (req: Request, res: Response, next: any) => 
         
         // Ensure at least city and country are set (even if coordinates are 0)
         if (!contactData.city && !contactData.country) {
-            console.log('⚠️ No location data for contact, using fallback');
+            logger.warn('No location data for contact, using fallback');
             const fallback = getFallbackLocation();
             contactData.city = contactData.city || fallback.city;
             contactData.country = contactData.country || fallback.country;
@@ -85,14 +86,14 @@ const saveContactController = async (req: Request, res: Response, next: any) => 
             data: result.contact,
         });
     } catch (error: any) {
-        console.error('❌ Save contact controller error:', error);
+        logger.error('Save contact controller error', error);
         if (!res.headersSent) {
             return res.status(400).json({
                 success: false,
                 message: error.message || "Something went wrong",
             });
         }
-        console.error("Unhandled error after response:", error);
+        logger.error("Unhandled error after response", error);
     }
 };
 
@@ -110,7 +111,7 @@ const getAllContactsController = async (req: Request, res: Response, next: NextF
     res.status(200).json({ success: true, data: contacts });
   } catch (error: any) {
     // Services already return empty arrays, but handle any unexpected errors
-    console.warn('⚠️ Error in getAllContactsController:', error.message);
+    logger.warn('Error in getAllContactsController', error);
     res.status(200).json({ success: true, data: [] });
   }
 };
@@ -124,16 +125,16 @@ const updateContactController = async (req: Request, res: Response, next: NextFu
 
         // Optional: Get location from IP if updating location fields
         const ip = getClientIP(req);
-        console.log('🌐 Client IP for contact update:', ip);
+        logger.debug('Client IP for contact update', { ip });
 
         // If updating location and IP available, add location from IP
         if (ip && (!updateData.latitude || !updateData.city)) {
-            console.log('🔍 Fetching location from IP for contact update:', ip);
+            logger.debug('Fetching location from IP for contact update', { ip });
             // Pass req object for header detection
             const ipLocation = await getLocationFromIP(ip, req);
             
             if (ipLocation) {
-                console.log('✅ Location fetched for contact update:', ipLocation);
+                logger.debug('Location fetched for contact update', { ipLocation });
                 updateData = {
                     ...updateData,
                     latitude: updateData.latitude ?? ipLocation.latitude ?? 0,
@@ -146,7 +147,7 @@ const updateContactController = async (req: Request, res: Response, next: NextFu
         
         // Ensure at least city and country are set (even if coordinates are 0)
         if (!updateData.city && !updateData.country) {
-            console.log('⚠️ No location data for contact update, using fallback');
+            logger.warn('No location data for contact update, using fallback');
             const fallback = getFallbackLocation();
             updateData.city = updateData.city || fallback.city;
             updateData.country = updateData.country || fallback.country;
@@ -219,7 +220,7 @@ const requestContactPermissionController = async (req: Request, res: Response, n
             data: request,
         });
     } catch (error: any) {
-        console.error('❌ Request contact permission error:', error);
+        logger.error('Request contact permission error', error);
         if (!res.headersSent) {
             return res.status(400).json({
                 success: false,
@@ -246,7 +247,7 @@ const getReceivedRequestsController = async (req: Request, res: Response, next: 
         });
     } catch (error: any) {
         // Services already return empty arrays, but handle any unexpected errors
-        console.warn('⚠️ Error in getReceivedRequestsController:', error.message);
+        logger.warn('Error in getReceivedRequestsController', error);
         if (!res.headersSent) {
             return res.status(200).json({
                 success: true,
@@ -272,7 +273,7 @@ const getSentRequestsController = async (req: Request, res: Response, next: any)
         });
     } catch (error: any) {
         // Services already return empty arrays, but handle any unexpected errors
-        console.warn('⚠️ Error in getSentRequestsController:', error.message);
+        logger.warn('Error in getSentRequestsController', error);
         if (!res.headersSent) {
             return res.status(200).json({
                 success: true,
@@ -305,7 +306,7 @@ const approveRequestController = async (req: Request, res: Response, next: any) 
             data: result.contact,
         });
     } catch (error: any) {
-        console.error('❌ Approve request error:', error);
+        logger.error('Approve request error', error);
         if (!res.headersSent) {
             return res.status(400).json({
                 success: false,
@@ -337,7 +338,7 @@ const rejectRequestController = async (req: Request, res: Response, next: any) =
             data: request,
         });
     } catch (error: any) {
-        console.error('❌ Reject request error:', error);
+        logger.error('Reject request error', error);
         if (!res.headersSent) {
             return res.status(400).json({
                 success: false,
@@ -377,7 +378,7 @@ const createReversePermissionRequestController = async (req: Request, res: Respo
             data: request,
         });
     } catch (error: any) {
-        console.error('❌ Create reverse permission request error:', error);
+        logger.error('Create reverse permission request error', error);
         if (!res.headersSent) {
             return res.status(400).json({
                 success: false,

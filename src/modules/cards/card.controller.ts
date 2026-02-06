@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { cardServices } from "./card.services";
 import { uploadImageToCloudinary, deleteImageFromCloudinary } from "../../lib/upload";
+import { logger } from "../../lib/logger";
 
 // Helper function to handle file uploads
 const handleFileUpload = async (
@@ -13,7 +14,7 @@ const handleFileUpload = async (
     const url = await uploadImageToCloudinary(file.buffer, folder);
     return url;
   } catch (error: any) {
-    console.error(`❌ Failed to upload ${folder}:`, error);
+    logger.error(`Failed to upload ${folder}`, error);
     throw new Error(`Failed to upload ${folder}: ${error.message}`);
   }
 };
@@ -171,7 +172,7 @@ const createCard = async (
       data: result,
     });
   } catch (error: any) {
-    console.error("❌ Create card error:", error);
+    logger.error("Create card error", error);
     if (!res.headersSent) {
       res.status(400).json({
         success: false,
@@ -185,15 +186,15 @@ const createCard = async (
 const getAllCard = async (req: Request, res: Response) => {
   try {
   const userId = req.user?.id as string;
-    console.log('🔍 getAllCard called - userId:', userId, 'user:', req.user);
+    logger.debug('getAllCard called', { userId, user: req.user });
     
     if (!userId) {
-      console.warn('⚠️ No userId found in request');
+      logger.warn('No userId found in request');
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
     
   const result = await cardServices.getAllCard(userId);
-    console.log('✅ getAllCard result:', result.length, 'cards');
+    logger.debug('getAllCard result', { count: result.length });
     
   res.status(200).json({
     success: true,
@@ -202,9 +203,7 @@ const getAllCard = async (req: Request, res: Response) => {
   });
   } catch (error: any) {
     // Services already return empty arrays, but handle any unexpected errors
-    console.error('❌ Error in getAllCard controller:', {
-      message: error.message,
-      stack: error.stack,
+    logger.error('Error in getAllCard controller', error, {
       userId: req.user?.id
     });
     res.status(200).json({ success: true, data: [] });
@@ -477,7 +476,7 @@ const updateCard = async (req: Request, res: Response, next: any) => {
       data: result,
     });
   } catch (error: any) {
-    console.error("❌ Update card error:", error);
+    logger.error("Update card error", error);
     if (!res.headersSent) {
       res.status(400).json({
         success: false,
@@ -516,7 +515,7 @@ const deleteCard = async (req: Request, res: Response, next: any) => {
       }
     } catch (error) {
       // Card not found or already deleted, continue with deletion
-      console.log("Card not found for image cleanup, continuing with deletion");
+      logger.debug("Card not found for image cleanup, continuing with deletion");
     }
 
     await cardServices.deleteCard(id, req.user.id);
@@ -579,7 +578,7 @@ const uploadCardImage = async (req: Request, res: Response, next: any) => {
       imageUrl: url, // Also include imageUrl for compatibility
     });
   } catch (error: any) {
-    console.error("❌ Upload card image error:", error);
+    logger.error("Upload card image error", error);
     if (!res.headersSent) {
       res.status(400).json({
         success: false,

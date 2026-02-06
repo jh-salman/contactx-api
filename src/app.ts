@@ -9,6 +9,7 @@ import { scanRoutes } from "./modules/analytics/scan.routes";
 import { contactRoutes } from "./modules/contacts/contacts.routes";
 import { uploadRoutes } from "./modules/upload/upload.routes";
 import { notFoundRoute } from "./middleware/notFoundRoute";
+import { logger } from "./lib/logger";
 import { globalErrorHandler } from "./middleware/globalErrorHandler";
 import morgan from "morgan";
 
@@ -30,12 +31,8 @@ const allowedOrigins = [
   'http://10.153.79.18:3004',  // ← নতুন Mac IP
   'exp://10.153.79.18:8081',   // ← Expo dev server
   'http://10.153.79.18:8081',  // ← Alternative Expo URL
-  // Cloudflare tunnel URLs
-  'https://hwy-editorial-updates-talked.trycloudflare.com', // ← API Server tunnel
-  'https://seems-alive-launch-review.trycloudflare.com', // ← Expo app tunnel
-  'https://ladies-sunset-bra-opportunities.trycloudflare.com', // ← পুরানো tunnel
-  // Vercel production URL
-  'https://contact-x-api.vercel.app/api/card/all', // ← Production Vercel URL
+
+  'https://contact-x-api.vercel.app/api', // ← Production Vercel URL
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
   'http://10.108.105.18:3004',
   'http://10.102.144.18:3004',
@@ -45,13 +42,13 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
     
     if (allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
       callback(null, true);
     } else {
-      console.log('CORS blocked origin:', origin);
+      // console.log এর পরিবর্তে logger ব্যবহার করুন
+      logger.warn('CORS blocked origin', { origin });
       callback(new Error('Not allowed by CORS'));
     }
   },

@@ -1,6 +1,7 @@
 import { Card } from "../../../generated/prisma/client";
 import { prisma } from "../../lib/prisma";
 import { generateQRCode } from "../../lib/qr";
+import { logger } from "../../lib/logger";
 // import { Card } from "@prisma/client";
 
 const createCard = async (
@@ -99,7 +100,7 @@ const getAllCard = async (userId: string): Promise<Card[]> => {
     }
 
     try {
-        console.log('🔍 Fetching cards for userId:', userId);
+        logger.debug('Fetching cards for userId', { userId });
         
         // Fetch cards WITHOUT includes to avoid column errors
     const cards = await prisma.card.findMany({
@@ -109,10 +110,10 @@ const getAllCard = async (userId: string): Promise<Card[]> => {
         },
     });
 
-        console.log('✅ Found cards (basic):', cards.length);
+        logger.debug('Found cards (basic)', { count: cards.length });
         
     if (!cards || cards.length === 0) {
-            console.log('ℹ️ No cards found for userId:', userId);
+            logger.debug('No cards found for userId', { userId });
             return [];
         }
 
@@ -128,7 +129,7 @@ const getAllCard = async (userId: string): Promise<Card[]> => {
                     });
                     result.personalInfo = personalInfo;
                 } catch (e: any) {
-                    console.warn(`⚠️ personalInfo fetch failed for card ${card.id}:`, e.message);
+                    logger.warn(`personalInfo fetch failed for card`, e, { cardId: card.id });
                     result.personalInfo = null;
                 }
                 
@@ -139,7 +140,7 @@ const getAllCard = async (userId: string): Promise<Card[]> => {
                     });
                     result.socialLinks = socialLinks;
                 } catch (e: any) {
-                    console.warn(`⚠️ socialLinks fetch failed for card ${card.id}:`, e.message);
+                    logger.warn(`socialLinks fetch failed for card`, e, { cardId: card.id });
                     result.socialLinks = null;
                 }
                 
@@ -147,19 +148,16 @@ const getAllCard = async (userId: string): Promise<Card[]> => {
             })
         );
 
-        console.log('✅ Cards with relations:', cardsWithRelations.length);
+        logger.debug('Cards with relations', { count: cardsWithRelations.length });
         if (cardsWithRelations.length > 0) {
-            console.log('📋 Card IDs:', cardsWithRelations.map(c => c.id));
+            logger.debug('Card IDs', { cardIds: cardsWithRelations.map(c => c.id) });
         }
         
         return cardsWithRelations as Card[];
         
     } catch (error: any) {
         // Handle database errors gracefully
-        console.error('❌ Error fetching cards:', {
-            message: error.message,
-            code: error.code,
-            meta: error.meta,
+        logger.error('Error fetching cards', error, {
             userId
         });
         
