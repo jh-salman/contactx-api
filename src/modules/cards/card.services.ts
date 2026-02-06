@@ -102,16 +102,16 @@ const getAllCard = async (userId: string): Promise<Card[]> => {
         console.log('🔍 Fetching cards for userId:', userId);
         
         // Fetch cards WITHOUT includes to avoid column errors
-        const cards = await prisma.card.findMany({
-            where: { userId },
-            orderBy: {
-                createdAt: "desc",
-            },
-        });
+    const cards = await prisma.card.findMany({
+        where: { userId },
+        orderBy: {
+            createdAt: "desc",
+        },
+    });
 
         console.log('✅ Found cards (basic):', cards.length);
         
-        if (!cards || cards.length === 0) {
+    if (!cards || cards.length === 0) {
             console.log('ℹ️ No cards found for userId:', userId);
             return [];
         }

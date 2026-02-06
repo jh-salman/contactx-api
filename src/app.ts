@@ -35,7 +35,7 @@ const allowedOrigins = [
   'https://seems-alive-launch-review.trycloudflare.com', // ← Expo app tunnel
   'https://ladies-sunset-bra-opportunities.trycloudflare.com', // ← পুরানো tunnel
   // Vercel production URL
-  'https://contact-x-api.vercel.app', // ← Production Vercel URL
+  'https://contact-x-api.vercel.app/api/card/all', // ← Production Vercel URL
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
   'http://10.108.105.18:3004',
   'http://10.102.144.18:3004',

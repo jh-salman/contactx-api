@@ -184,7 +184,7 @@ const createCard = async (
 
 const getAllCard = async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id as string;
+  const userId = req.user?.id as string;
     console.log('🔍 getAllCard called - userId:', userId, 'user:', req.user);
     
     if (!userId) {
@@ -192,14 +192,14 @@ const getAllCard = async (req: Request, res: Response) => {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
     
-    const result = await cardServices.getAllCard(userId);
+  const result = await cardServices.getAllCard(userId);
     console.log('✅ getAllCard result:', result.length, 'cards');
     
-    res.status(200).json({
-      success: true,
-      message: "Card details",
-      data: result
-    });
+  res.status(200).json({
+    success: true,
+    message: "Card details",
+    data: result
+  });
   } catch (error: any) {
     // Services already return empty arrays, but handle any unexpected errors
     console.error('❌ Error in getAllCard controller:', {

@@ -3,7 +3,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 import { phoneNumber } from "better-auth/plugins";
-import { sendOTPCode } from "./twilio";
+import { sendOTPCode, getTwilioStatus } from "./twilio";
 
 // Parse trusted origins from environment variable or use defaults
 // Can be comma-separated string or array
@@ -67,6 +67,20 @@ try {
     const baseURL = getBaseURL();
     console.log('🔗 Better Auth Base URL:', baseURL);
     
+    // Log Twilio configuration status
+    const twilioStatus = getTwilioStatus();
+    if (twilioStatus.configured) {
+        console.log('✅ Twilio is configured and ready');
+        console.log('   📱 Using manual SMS - Better Auth generates the code');
+    } else {
+        console.warn('⚠️ Twilio is not fully configured:', {
+            hasAccountSid: twilioStatus.hasAccountSid,
+            hasAuthToken: twilioStatus.hasAuthToken,
+            hasPhoneNumber: twilioStatus.hasPhoneNumber,
+        });
+        console.warn('   OTP codes will be logged to console instead of sent via SMS');
+    }
+    
     auth = betterAuth({
     trustedOrigins: trustedOriginsList,
     baseURL: baseURL,
@@ -77,9 +91,9 @@ try {
         phoneNumber({
             sendOTP: async ({ phoneNumber, code }, ctx) => {
                 console.log("📱 Sending OTP to:", phoneNumber);
-                console.log("🔐 OTP Code:", code);
+                console.log("🔐 OTP Code (Better Auth generated):", code);
                 
-                // Send OTP via Twilio SMS
+                // Always use manual SMS - Better Auth generates the code
                 const sent = await sendOTPCode(phoneNumber, code);
                 
                 if (sent) {
