@@ -63,6 +63,46 @@ app.get("/", (_, res) => {
   res.send("Hello World");
 });
 
+// Health check endpoint
+app.get("/api/health", (_, res) => {
+  res.json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || "development",
+    version: process.env.npm_package_version || "1.0.0",
+  });
+});
+
+// Root API endpoint with server information
+app.get("/api", (_, res) => {
+  res.json({
+    name: "ContactX API Server",
+    version: process.env.npm_package_version || "1.0.0",
+    status: "running",
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || "development",
+    endpoints: {
+      auth: "/api/auth",
+      cards: "/api/card",
+      publicCard: "/api/public-card",
+      contacts: "/api/contacts",
+      scan: "/api/scan",
+      upload: "/api/upload",
+      health: "/api/health",
+    },
+    server: {
+      nodeVersion: process.version,
+      platform: process.platform,
+      uptime: process.uptime(),
+      memory: {
+        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + " MB",
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + " MB",
+      },
+    },
+  });
+});
+
 app.get("/api/protected", requireAuth, (req, res) => {
   res.json({
     message: "This is a protected route",
