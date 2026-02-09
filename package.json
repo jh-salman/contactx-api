@@ -12,6 +12,7 @@
     "build": "prisma generate && tsup",
     "start": "node dist/src/server.js",
     "postinstall": "prisma generate",
+    "setup:twilio": "tsx src/lib/setup-twilio-service.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

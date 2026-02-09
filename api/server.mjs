@@ -576,8 +576,8 @@ var getTrustedOrigins = () => {
       "http://127.0.0.1:3004",
       "http://10.26.38.18:3004",
       // Mobile app origin (update IP if it changes)
-      "https://contact-x-api.vercel.app",
-      // Production Vercel URL - mobile apps use this as origin
+      "https://contactx.xsalonx.com",
+      // Production domain - mobile apps use this as origin
       process.env.BETTER_AUTH_URL,
       process.env.FRONTEND_URL,
       process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null
@@ -598,7 +598,7 @@ var getBaseURL = () => {
     return `https://${process.env.VERCEL_URL}`;
   }
   if (process.env.NODE_ENV === "production") {
-    return "https://contact-x-api.vercel.app";
+    return "https://contactx.xsalonx.com";
   }
   return "https://hwy-editorial-updates-talked.trycloudflare.com";
 };
@@ -3099,8 +3099,8 @@ var allowedOrigins = [
   // ← Expo dev server
   "http://10.153.79.18:8081",
   // ← Alternative Expo URL
-  "https://contact-x-api.vercel.app/api",
-  // ← Production Vercel URL
+  "https://contactx.xsalonx.com",
+  // ← Production domain
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
   "http://10.108.105.18:3004",
   "http://10.102.144.18:3004",
@@ -3124,6 +3124,42 @@ app.use(cors({
 app.all("/api/auth/*splat", toNodeHandler(auth));
 app.get("/", (_, res) => {
   res.send("Hello World");
+});
+app.get("/api/health", (_, res) => {
+  res.json({
+    status: "healthy",
+    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || "development",
+    version: process.env.npm_package_version || "1.0.0"
+  });
+});
+app.get("/api", (_, res) => {
+  res.json({
+    name: "ContactX API Server",
+    version: process.env.npm_package_version || "1.0.0",
+    status: "running",
+    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+    environment: process.env.NODE_ENV || "development",
+    endpoints: {
+      auth: "/api/auth",
+      cards: "/api/card",
+      publicCard: "/api/public-card",
+      contacts: "/api/contacts",
+      scan: "/api/scan",
+      upload: "/api/upload",
+      health: "/api/health"
+    },
+    server: {
+      nodeVersion: process.version,
+      platform: process.platform,
+      uptime: process.uptime(),
+      memory: {
+        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + " MB",
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + " MB"
+      }
+    }
+  });
 });
 app.get("/api/protected", requireAuth, (req, res) => {
   res.json({

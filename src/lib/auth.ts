@@ -3,7 +3,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 import { phoneNumber } from "better-auth/plugins";
-import { sendOTPCode, getTwilioStatus } from "./twilio";
+import { sendOTPCodeViaVerify, verifyOTPCodeViaVerify, getTwilioStatus } from "./twilio";
 import { logger } from "./logger";
 
 // Parse trusted origins from environment variable or use defaults
@@ -24,7 +24,7 @@ const getTrustedOrigins = (): string[] => {
             "http://localhost:3004",
             "http://127.0.0.1:3004",
             "http://10.26.38.18:3004", // Mobile app origin (update IP if it changes)
-            "https://contact-x-api.vercel.app", // Production Vercel URL - mobile apps use this as origin
+            "https://contactx.xsalonx.com", // Production domain - mobile apps use this as origin
             process.env.BETTER_AUTH_URL,
             process.env.FRONTEND_URL,
             process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
@@ -52,9 +52,9 @@ const getBaseURL = (): string => {
     if (process.env.VERCEL_URL) {
         return `https://${process.env.VERCEL_URL}`;
     }
-    // Production fallback - use Vercel URL if in production
+    // Production fallback - use production domain if in production
     if (process.env.NODE_ENV === 'production') {
-        return 'https://contact-x-api.vercel.app';
+        return 'https://contactx.xsalonx.com';
     }
     // Development fallback - use tunnel URL
     return 'https://hwy-editorial-updates-talked.trycloudflare.com';
@@ -71,7 +71,7 @@ try {
     const twilioStatus = getTwilioStatus();
     if (twilioStatus.configured) {
         logger.info('Twilio is configured and ready', { 
-            note: 'Using manual SMS - Better Auth generates the code' 
+            note: 'Using Twilio Verify API - Twilio generates the code' 
         });
     } else {
         logger.warn('Twilio is not fully configured', {
@@ -92,18 +92,38 @@ try {
         phoneNumber({
             sendOTP: async ({ phoneNumber, code }, ctx) => {
                 logger.info("Sending OTP", { phoneNumber });
-                logger.debug("OTP Code (Better Auth generated)", { code });
+                logger.debug("OTP Code (Better Auth generated - fallback)", { code });
                 
-                // Always use manual SMS - Better Auth generates the code
-                const sent = await sendOTPCode(phoneNumber, code);
+                // Use Twilio Verify API (works with Bangladesh numbers, avoids Error 21612)
+                // Optional: Use custom template from environment variable
+                const templateSid = process.env.TWILIO_VERIFY_TEMPLATE_SID;
+                const result = await sendOTPCodeViaVerify(phoneNumber, templateSid);
                 
-                if (sent) {
-                    logger.info("OTP sent successfully via SMS", { phoneNumber });
-                } else {
-                    logger.warn("Failed to send OTP via SMS, code logged to console", { 
+                if (result.success) {
+                    logger.info("OTP sent successfully via Twilio Verify API", { 
                         phoneNumber,
-                        code 
+                        sid: result.sid 
                     });
+                } else {
+                    logger.warn("Failed to send OTP via Twilio Verify API", { 
+                        phoneNumber,
+                        error: result.error,
+                        code // Fallback: Better Auth generated code logged to console
+                    });
+                }
+            },
+            verifyOTP: async ({ phoneNumber, code }, ctx) => {
+                // Custom verification using Twilio Verify API
+                logger.info("Verifying OTP via Twilio Verify API", { phoneNumber });
+                
+                const result = await verifyOTPCodeViaVerify(phoneNumber, code);
+                
+                if (result.valid) {
+                    logger.info("OTP verified successfully via Twilio Verify API", { phoneNumber });
+                    return { success: true };
+                } else {
+                    logger.warn("OTP verification failed", { phoneNumber, error: result.error });
+                    return { success: false, error: result.error || "Invalid code" };
                 }
             },
             signUpOnVerification: {

@@ -208,7 +208,10 @@ export const sendSMS = async (to: string, message: string): Promise<boolean> => 
 const VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID || 'VAc66c779f03a7c204d05b7a429787deec';
 
 // Send OTP using Twilio Verify API (recommended - more secure)
-export const sendOTPCodeViaVerify = async (phoneNumber: string): Promise<{ success: boolean; sid?: string; error?: string }> => {
+export const sendOTPCodeViaVerify = async (
+  phoneNumber: string,
+  templateSid?: string // Optional template SID for custom messages
+): Promise<{ success: boolean; sid?: string; error?: string }> => {
   try {
     const client = getTwilioClient();
     if (!client) {
@@ -219,19 +222,27 @@ export const sendOTPCodeViaVerify = async (phoneNumber: string): Promise<{ succe
     // Format phone number (supports USA and Bangladesh)
     const formattedPhone = formatPhoneNumber(phoneNumber);
     
-    // Use Twilio Verify API
+    // Use Twilio Verify API with optional template
+    const verificationParams: any = {
+      to: formattedPhone,
+      channel: 'sms'
+    };
+    
+    // Add template if provided (for custom message templates)
+    if (templateSid) {
+      verificationParams.templateSid = templateSid;
+    }
+    
     const verification = await client.verify.v2
       .services(VERIFY_SERVICE_SID)
       .verifications
-      .create({
-        to: formattedPhone,
-        channel: 'sms'
-      });
+      .create(verificationParams);
     
     logger.info('OTP sent via Twilio Verify', {
       sid: verification.sid,
       to: formattedPhone,
       status: verification.status,
+      templateSid: templateSid || 'default'
     });
     
     return { success: true, sid: verification.sid };
@@ -299,10 +310,10 @@ export const sendOTPCode = async (phoneNumber: string, code: string): Promise<bo
   const formatted = formatPhoneNumber(phoneNumber);
   const isBangladesh = formatted.startsWith('+880');
   
-  // Bilingual message support
+  // Production-level SMS messages for Contact X
   const message = isBangladesh
-    ? `আপনার verification code: ${code}\n\nএই code ১০ মিনিটের মধ্যে expire হবে।`
-    : `Your verification code is: ${code}\n\nThis code will expire in 10 minutes.`;
+    ? `ContactX - আপনার verification code: ${code}\n\nএই code ১০ মিনিটের মধ্যে expire হবে। কাউকে share করবেন না।\n\nContactX by SalonX`
+    : `ContactX - Your verification code: ${code}\n\nThis code expires in 10 minutes. Do not share with anyone.\n\nContactX by SalonX`;
   
   return await sendSMS(phoneNumber, message);
 };
