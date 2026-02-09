@@ -423,6 +423,62 @@ import { phoneNumber } from "better-auth/plugins";
 
 // src/lib/twilio.ts
 import twilio from "twilio";
+
+// src/lib/otpRateLimiter.ts
+var rateLimitStore = /* @__PURE__ */ new Map();
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitStore.entries()) {
+    if (entry.resetAt < now) {
+      rateLimitStore.delete(key);
+    }
+  }
+}, 5 * 60 * 1e3);
+var checkOTPRateLimit = (phoneNumber2, options) => {
+  const key = `otp:${phoneNumber2}`;
+  const now = Date.now();
+  const entry = rateLimitStore.get(key);
+  if (!entry || entry.resetAt < now) {
+    rateLimitStore.set(key, {
+      count: 1,
+      resetAt: now + options.windowMs,
+      firstAttempt: now
+    });
+    return {
+      allowed: true,
+      remainingAttempts: options.maxAttempts - 1
+    };
+  }
+  if (entry.count >= options.maxAttempts) {
+    const retryAfter = Math.ceil((entry.resetAt - now) / 1e3);
+    logger.warn("OTP rate limit exceeded (application level)", {
+      phoneNumber: phoneNumber2,
+      count: entry.count,
+      maxAttempts: options.maxAttempts,
+      retryAfter,
+      windowMs: options.windowMs
+    });
+    return {
+      allowed: false,
+      retryAfter,
+      remainingAttempts: 0
+    };
+  }
+  entry.count++;
+  rateLimitStore.set(key, entry);
+  return {
+    allowed: true,
+    remainingAttempts: options.maxAttempts - entry.count
+  };
+};
+var getOTPRateLimitConfig = () => {
+  return {
+    maxAttempts: parseInt(process.env.OTP_RATE_LIMIT_MAX_ATTEMPTS || "3", 10),
+    windowMs: parseInt(process.env.OTP_RATE_LIMIT_WINDOW_SECONDS || "60", 10) * 1e3
+  };
+};
+
+// src/lib/twilio.ts
 var getTwilioStatus = () => {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -505,7 +561,9 @@ var formatPhoneNumber = (phone) => {
   }
   return "+" + cleaned;
 };
+var VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID || "VAc66c779f03a7c204d05b7a429787deec";
 var sendSMS = async (to, message) => {
+  const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
   const fromNumber = process.env.TWILIO_PHONE_NUMBER;
   try {
     const client = getTwilioClient();
@@ -513,24 +571,31 @@ var sendSMS = async (to, message) => {
       logger.warn("Twilio client not initialized. SMS not sent.");
       return false;
     }
-    if (!fromNumber) {
-      logger.error("TWILIO_PHONE_NUMBER not set in environment variables");
-      return false;
-    }
     const formattedPhone = formatPhoneNumber(to);
     logger.debug("Phone number formatted", {
       original: to,
       formatted: formattedPhone
     });
-    const result = await client.messages.create({
+    const messageParams = {
       body: message,
-      from: fromNumber,
       to: formattedPhone
-    });
+    };
+    if (messagingServiceSid) {
+      messageParams.messagingServiceSid = messagingServiceSid;
+      logger.debug("Using Messaging Service SID for SMS", { messagingServiceSid });
+    } else if (fromNumber) {
+      messageParams.from = fromNumber;
+      logger.debug("Using phone number for SMS (fallback - US only)", { fromNumber });
+    } else {
+      logger.error("TWILIO_MESSAGING_SERVICE_SID or TWILIO_PHONE_NUMBER must be set");
+      return false;
+    }
+    const result = await client.messages.create(messageParams);
     logger.info("SMS sent successfully", {
       sid: result.sid,
       to: formattedPhone,
-      status: result.status
+      status: result.status,
+      method: messagingServiceSid ? "Messaging Service" : "Phone Number"
     });
     return true;
   } catch (error) {
@@ -538,9 +603,13 @@ var sendSMS = async (to, message) => {
       code: error.code,
       status: error.status,
       to,
-      from: fromNumber || "Not set"
+      messagingServiceSid: messagingServiceSid || "Not set",
+      fromNumber: fromNumber || "Not set"
     };
-    if (error.code === 21211) {
+    if (error.code === 21612) {
+      errorData.note = "Cannot send SMS from US number to international number. Set TWILIO_MESSAGING_SERVICE_SID to enable international SMS.";
+      logger.error("Twilio Error 21612 - International SMS restriction", error, errorData);
+    } else if (error.code === 21211) {
       errorData.note = "Invalid phone number format. USA format: +12086269799 or 2086269799. Bangladesh format: +8801712345678 or 01712345678";
     } else if (error.code === 21608) {
       errorData.note = "Twilio phone number not verified. Check your Twilio account.";
@@ -551,16 +620,167 @@ var sendSMS = async (to, message) => {
     return false;
   }
 };
-var VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID || "VAc66c779f03a7c204d05b7a429787deec";
 var sendOTPCode = async (phoneNumber2, code) => {
-  const formatted = formatPhoneNumber(phoneNumber2);
-  const isBangladesh = formatted.startsWith("+880");
-  const message = isBangladesh ? `\u0986\u09AA\u09A8\u09BE\u09B0 verification code: ${code}
-
-\u098F\u0987 code \u09E7\u09E6 \u09AE\u09BF\u09A8\u09BF\u099F\u09C7\u09B0 \u09AE\u09A7\u09CD\u09AF\u09C7 expire \u09B9\u09AC\u09C7\u0964` : `Your verification code is: ${code}
-
-This code will expire in 10 minutes.`;
-  return await sendSMS(phoneNumber2, message);
+  try {
+    const rateLimitConfig = getOTPRateLimitConfig();
+    const rateLimit = checkOTPRateLimit(phoneNumber2, rateLimitConfig);
+    if (!rateLimit.allowed) {
+      const errorMessage = `Too many OTP requests. Please wait ${rateLimit.retryAfter} seconds before requesting again.`;
+      logger.warn("OTP rate limit exceeded (application level)", {
+        phoneNumber: phoneNumber2,
+        retryAfter: rateLimit.retryAfter,
+        maxAttempts: rateLimitConfig.maxAttempts,
+        windowMs: rateLimitConfig.windowMs
+      });
+      throw new Error(errorMessage);
+    }
+    const formatted = formatPhoneNumber(phoneNumber2);
+    const isBangladesh = formatted.startsWith("+880");
+    const message = isBangladesh ? `ContactX - আপনার verification code: ${code}\n\nএই code ১০ মিনিটের মধ্যে expire হবে। কাউকে share করবেন না।\n\nContactX by SalonX` : `ContactX - Your verification code: ${code}\n\nThis code expires in 10 minutes. Do not share with anyone.\n\nContactX by SalonX`;
+    const success = await sendSMS(phoneNumber2, message);
+    if (success) {
+      logger.info("OTP sent successfully via SMS", { phoneNumber: phoneNumber2, codeLength: code.length });
+    } else {
+      logger.error("Failed to send OTP via SMS", { phoneNumber: phoneNumber2 });
+    }
+    return success;
+  } catch (error) {
+    logger.error("Error in sendOTPCode", error, { phoneNumber: phoneNumber2 });
+    throw error;
+  }
+};
+var sendOTPCodeViaVerify = async (phoneNumber2, templateSid) => {
+  try {
+    const rateLimitConfig = getOTPRateLimitConfig();
+    const rateLimit = checkOTPRateLimit(phoneNumber2, rateLimitConfig);
+    if (!rateLimit.allowed) {
+      const errorMessage = `Too many OTP requests. Please wait ${rateLimit.retryAfter} seconds before requesting again.`;
+      logger.warn("OTP rate limit exceeded (application level)", {
+        phoneNumber: phoneNumber2,
+        retryAfter: rateLimit.retryAfter,
+        maxAttempts: rateLimitConfig.maxAttempts,
+        windowMs: rateLimitConfig.windowMs
+      });
+      return { success: false, error: errorMessage };
+    }
+    const client = getTwilioClient();
+    if (!client) {
+      logger.warn("Twilio client not initialized. OTP not sent.");
+      return { success: false, error: "Twilio client not initialized" };
+    }
+    const formattedPhone = formatPhoneNumber(phoneNumber2);
+    const verificationParams = {
+      to: formattedPhone,
+      channel: "sms"
+    };
+    if (templateSid) {
+      verificationParams.templateSid = templateSid;
+    }
+    const verification = await client.verify.v2.services(VERIFY_SERVICE_SID).verifications.create(verificationParams);
+    logger.info("OTP sent via Twilio Verify", {
+      sid: verification.sid,
+      to: formattedPhone,
+      status: verification.status,
+      templateSid: templateSid || "default"
+    });
+    return { success: true, sid: verification.sid };
+  } catch (error) {
+    const errorData = {
+      code: error.code,
+      status: error.status,
+      to: phoneNumber2
+    };
+    let userFriendlyError = error.message;
+    if (error.code === 60200) {
+      errorData.note = "Invalid phone number. Please use a valid phone number with country code.";
+      userFriendlyError = "Invalid phone number format. Please check and try again.";
+    } else if (error.code === 60203) {
+      errorData.note = "Maximum OTP send attempts reached. Please wait before requesting a new OTP.";
+      userFriendlyError = "Too many OTP requests. Please wait a few minutes before trying again.";
+    } else if (error.code === 60410) {
+      errorData.note = "Phone number temporarily blocked by Twilio. Contact support if this is a legitimate number.";
+      userFriendlyError = "Unable to send OTP to this number. Please contact support or try again later.";
+    } else if (error.code === 20429) {
+      errorData.note = "Too many requests. Please wait a moment and try again.";
+      userFriendlyError = "Too many requests. Please wait a moment and try again.";
+    } else if (error.status === 429) {
+      errorData.note = "Rate limit exceeded. Please wait before trying again.";
+      userFriendlyError = "Too many requests. Please wait a few minutes before trying again.";
+    } else if (error.status === 403) {
+      errorData.note = "Access denied. Phone number may be blocked or restricted.";
+      userFriendlyError = "Unable to send OTP. Please contact support if this persists.";
+    }
+    logger.error("Error sending OTP via Twilio Verify", error, errorData);
+    return { success: false, error: userFriendlyError };
+  }
+};
+var verifyOTPCodeViaVerify = async (phoneNumber2, code) => {
+  try {
+    const client = getTwilioClient();
+    if (!client) {
+      logger.warn("Twilio client not initialized. OTP verification failed.");
+      return { success: false, valid: false, error: "Twilio client not initialized" };
+    }
+    const formattedPhone = formatPhoneNumber(phoneNumber2);
+    const verificationCheck = await client.verify.v2.services(VERIFY_SERVICE_SID).verificationChecks.create({
+      to: formattedPhone,
+      code
+    });
+    const isValid = verificationCheck.status === "approved";
+    logger.info("OTP verification result", {
+      sid: verificationCheck.sid,
+      status: verificationCheck.status,
+      valid: isValid
+    });
+    return { success: true, valid: isValid };
+  } catch (error) {
+    const errorCode = error.code;
+    const errorStatus = error.status;
+    const errorMessage = error.message || "Unknown error";
+    let userFriendlyError = errorMessage;
+    if (errorCode === 20404 || errorMessage.includes("was not found") || errorMessage.includes("VerificationCheck")) {
+      userFriendlyError = "OTP expired or invalid. Please request a new OTP code.";
+      logger.warn("OTP verification failed - verification not found", {
+        phoneNumber: phoneNumber2,
+        errorCode,
+        errorMessage,
+        note: "This usually means OTP was never sent, expired, or verification was not created"
+      });
+    } else if (errorCode === 60202) {
+      userFriendlyError = "Invalid OTP code. Please check and try again.";
+      logger.warn("OTP verification failed - invalid code", {
+        phoneNumber: phoneNumber2,
+        errorCode
+      });
+    } else if (errorCode === 60203) {
+      userFriendlyError = "Maximum verification attempts reached. Please request a new OTP code.";
+      logger.warn("OTP verification failed - max attempts reached", {
+        phoneNumber: phoneNumber2,
+        errorCode
+      });
+    } else if (errorCode === 20429 || errorStatus === 429) {
+      userFriendlyError = "Too many verification attempts. Please wait a moment before trying again.";
+      logger.warn("OTP verification failed - rate limit exceeded", {
+        phoneNumber: phoneNumber2,
+        errorCode
+      });
+    } else if (errorCode === 60200) {
+      userFriendlyError = "Invalid phone number format. Please check and try again.";
+      logger.warn("OTP verification failed - invalid phone number", {
+        phoneNumber: phoneNumber2,
+        errorCode
+      });
+    } else {
+      logger.error("Error verifying OTP", error, {
+        code: errorCode,
+        status: errorStatus,
+        message: errorMessage,
+        phoneNumber: phoneNumber2
+      });
+      userFriendlyError = "Failed to verify OTP. Please try again or request a new code.";
+    }
+    return { success: false, valid: false, error: userFriendlyError };
+  }
 };
 
 // src/lib/auth.ts
@@ -576,8 +796,8 @@ var getTrustedOrigins = () => {
       "http://127.0.0.1:3004",
       "http://10.26.38.18:3004",
       // Mobile app origin (update IP if it changes)
-      "https://contactx.xsalonx.com",
-      // Production domain - mobile apps use this as origin
+      "https://contact-x-api.vercel.app",
+      // Production Vercel URL - mobile apps use this as origin
       process.env.BETTER_AUTH_URL,
       process.env.FRONTEND_URL,
       process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null
@@ -598,7 +818,7 @@ var getBaseURL = () => {
     return `https://${process.env.VERCEL_URL}`;
   }
   if (process.env.NODE_ENV === "production") {
-    return "https://contactx.xsalonx.com";
+    return "https://contact-x-api.vercel.app";
   }
   return "https://hwy-editorial-updates-talked.trycloudflare.com";
 };
@@ -609,13 +829,14 @@ try {
   const twilioStatus = getTwilioStatus();
   if (twilioStatus.configured) {
     logger.info("Twilio is configured and ready", {
-      note: "Using manual SMS - Better Auth generates the code"
+      note: "Using Twilio Verify API - Twilio generates the code"
     });
   } else {
     logger.warn("Twilio is not fully configured", {
       hasAccountSid: twilioStatus.hasAccountSid,
       hasAuthToken: twilioStatus.hasAuthToken,
       hasPhoneNumber: twilioStatus.hasPhoneNumber,
+      hasVerifyServiceSid: twilioStatus.hasVerifyServiceSid,
       note: "OTP codes will be logged to console instead of sent via SMS"
     });
   }
@@ -628,17 +849,30 @@ try {
     plugins: [
       phoneNumber({
         sendOTP: async ({ phoneNumber: phoneNumber2, code }, ctx) => {
-          logger.info("Sending OTP", { phoneNumber: phoneNumber2 });
+          logger.info("Sending OTP via SMS", { phoneNumber: phoneNumber2 });
           logger.debug("OTP Code (Better Auth generated)", { code });
-          const sent = await sendOTPCode(phoneNumber2, code);
-          if (sent) {
-            logger.info("OTP sent successfully via SMS", { phoneNumber: phoneNumber2 });
-          } else {
-            logger.warn("Failed to send OTP via SMS, code logged to console", {
-              phoneNumber: phoneNumber2,
-              code
-            });
+          try {
+            const success = await sendOTPCode(phoneNumber2, code);
+            if (success) {
+              logger.info("OTP sent successfully via SMS", {
+                phoneNumber: phoneNumber2,
+                codeLength: code?.length
+              });
+            } else {
+              logger.error("Failed to send OTP via SMS", { phoneNumber: phoneNumber2 });
+              throw new Error("Failed to send OTP. Please try again.");
+            }
+          } catch (error) {
+            logger.error("Error sending OTP via SMS", error, { phoneNumber: phoneNumber2 });
+            throw new Error(error?.message || "Failed to send OTP. Please try again.");
           }
+        },
+        verifyOTP: async ({ phoneNumber: phoneNumber2, code }, ctx) => {
+          logger.info("OTP verified successfully (Better Auth handled verification)", {
+            phoneNumber: phoneNumber2,
+            codeLength: code?.length
+          });
+          return true;
         },
         signUpOnVerification: {
           getTempEmail: (phone) => `${phone}@temp.yoursite.com`,
@@ -3036,6 +3270,14 @@ var globalErrorHandler = (err, req, res, next) => {
         details: err.meta,
         stack: err.stack
       }
+    });
+  }
+  if (err.name === "OTPVerificationError" || err.message?.includes("OTP") || err.message?.includes("verification")) {
+    return res.status(400).json({
+      success: false,
+      message: err.message || "OTP verification failed",
+      code: "OTP_VERIFICATION_ERROR",
+      error: err.message || "Invalid or expired OTP code"
     });
   }
   if (err.name === "ValidationError" || err.name === "ZodError") {

@@ -13,6 +13,10 @@
     "start": "node dist/src/server.js",
     "postinstall": "prisma generate",
     "setup:twilio": "tsx src/lib/setup-twilio-service.ts",
+    "test:messaging": "tsx src/lib/test-messaging-service.ts",
+    "test:sms:status": "tsx src/lib/test-sms-status.ts",
+    "check:failed": "tsx src/lib/check-failed-message.ts",
+    "check:verify": "tsx src/lib/check-verify-service.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

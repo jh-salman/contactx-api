@@ -30,9 +30,11 @@ const allowedOrigins = [
   'http://127.0.0.1:3004',
   'http://10.153.79.18:3004',  // ← নতুন Mac IP
   'exp://10.153.79.18:8081',   // ← Expo dev server
-  'http://10.153.79.18:8081',  // ← Alternative Expo URL
+  'http://10.153.79.18:8081',
+  'http://localhost:8081',   // Expo dev server (same machine)
 
   'https://contactx.xsalonx.com', // ← Production domain
+  'https://salonx--wtbnn1wdao.expo.app', // ← EAS web deploy
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
   'http://10.108.105.18:3004',
   'http://10.102.144.18:3004',

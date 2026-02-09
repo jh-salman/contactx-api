@@ -171,6 +171,16 @@ export const globalErrorHandler = (
     });
   }
 
+  // Handle OTP verification errors
+  if (err.name === 'OTPVerificationError' || err.message?.includes('OTP') || err.message?.includes('verification')) {
+    return res.status(400).json({
+      success: false,
+      message: err.message || 'OTP verification failed',
+      code: 'OTP_VERIFICATION_ERROR',
+      error: err.message || 'Invalid or expired OTP code'
+    });
+  }
+
   // Handle validation errors
   if (err.name === 'ValidationError' || err.name === 'ZodError') {
     return res.status(400).json({

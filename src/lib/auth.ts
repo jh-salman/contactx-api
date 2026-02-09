@@ -3,7 +3,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 import { phoneNumber } from "better-auth/plugins";
-import { sendOTPCodeViaVerify, verifyOTPCodeViaVerify, getTwilioStatus } from "./twilio";
+import { getTwilioStatus, sendOTPViaWhatsApp } from "./twilio";
 import { logger } from "./logger";
 
 // Parse trusted origins from environment variable or use defaults
@@ -22,9 +22,11 @@ const getTrustedOrigins = (): string[] => {
         origins = [
             "http://localhost:3000",
             "http://localhost:3004",
+            "http://localhost:8081", // Expo dev server (web)
             "http://127.0.0.1:3004",
             "http://10.26.38.18:3004", // Mobile app origin (update IP if it changes)
             "https://contactx.xsalonx.com", // Production domain - mobile apps use this as origin
+            "https://salonx--wtbnn1wdao.expo.app", // EAS web deploy
             process.env.BETTER_AUTH_URL,
             process.env.FRONTEND_URL,
             process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
@@ -71,14 +73,14 @@ try {
     const twilioStatus = getTwilioStatus();
     if (twilioStatus.configured) {
         logger.info('Twilio is configured and ready', { 
-            note: 'Using Twilio Verify API - Twilio generates the code' 
+            note: 'Better Auth generates OTP → WhatsApp only. Verification by Better Auth only.'
         });
     } else {
         logger.warn('Twilio is not fully configured', {
             hasAccountSid: twilioStatus.hasAccountSid,
             hasAuthToken: twilioStatus.hasAuthToken,
             hasPhoneNumber: twilioStatus.hasPhoneNumber,
-            note: 'OTP codes will be logged to console instead of sent via SMS'
+            note: 'OTP codes will be logged to console instead of sent via WhatsApp'
         });
     }
     
@@ -91,41 +93,27 @@ try {
     plugins: [
         phoneNumber({
             sendOTP: async ({ phoneNumber, code }, ctx) => {
-                logger.info("Sending OTP", { phoneNumber });
-                logger.debug("OTP Code (Better Auth generated - fallback)", { code });
+                logger.info("Sending OTP (Better Auth generated) via WhatsApp only", { phoneNumber });
+                logger.debug("Better Auth OTP code", { codeLength: code?.length });
                 
-                // Use Twilio Verify API (works with Bangladesh numbers, avoids Error 21612)
-                // Optional: Use custom template from environment variable
-                const templateSid = process.env.TWILIO_VERIFY_TEMPLATE_SID;
-                const result = await sendOTPCodeViaVerify(phoneNumber, templateSid);
+                const whatsappResult = await sendOTPViaWhatsApp(phoneNumber, code);
                 
-                if (result.success) {
-                    logger.info("OTP sent successfully via Twilio Verify API", { 
+                if (whatsappResult.success) {
+                    logger.info("OTP sent successfully via WhatsApp (Better Auth code)", {
                         phoneNumber,
-                        sid: result.sid 
+                        messageSid: whatsappResult.messageSid,
+                        note: "Better Auth generated code sent via WhatsApp"
                     });
                 } else {
-                    logger.warn("Failed to send OTP via Twilio Verify API", { 
+                    logger.error("Failed to send OTP via WhatsApp", {
                         phoneNumber,
-                        error: result.error,
-                        code // Fallback: Better Auth generated code logged to console
+                        whatsappError: whatsappResult.errorMessage,
+                        code
                     });
+                    throw new Error(whatsappResult.errorMessage || "Failed to send OTP via WhatsApp");
                 }
             },
-            verifyOTP: async ({ phoneNumber, code }, ctx) => {
-                // Custom verification using Twilio Verify API
-                logger.info("Verifying OTP via Twilio Verify API", { phoneNumber });
-                
-                const result = await verifyOTPCodeViaVerify(phoneNumber, code);
-                
-                if (result.valid) {
-                    logger.info("OTP verified successfully via Twilio Verify API", { phoneNumber });
-                    return { success: true };
-                } else {
-                    logger.warn("OTP verification failed", { phoneNumber, error: result.error });
-                    return { success: false, error: result.error || "Invalid code" };
-                }
-            },
+            // verifyOTP not overridden → Better Auth verifies the code it stored (same code for SMS/WhatsApp)
             signUpOnVerification: {
                 getTempEmail: (phone) => `${phone}@temp.yoursite.com`,
                 getTempName: (phone) => `User_${phone}`
