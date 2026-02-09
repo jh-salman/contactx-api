@@ -6,6 +6,12 @@ import { phoneNumber } from "better-auth/plugins";
 import { getTwilioStatus, sendOTPViaWhatsApp } from "./twilio";
 import { logger } from "./logger";
 
+// Web origins that must always be allowed (Expo web dev + EAS web deploy)
+const ESSENTIAL_WEB_ORIGINS = [
+    "http://localhost:8081", // Expo dev server (web)
+    "https://salonx--wtbnn1wdao.expo.app", // EAS web deploy
+];
+
 // Parse trusted origins from environment variable or use defaults
 // Can be comma-separated string or array
 const getTrustedOrigins = (): string[] => {
@@ -31,6 +37,13 @@ const getTrustedOrigins = (): string[] => {
             process.env.FRONTEND_URL,
             process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
         ].filter(Boolean) as string[];
+    }
+    
+    // Always include essential web origins so production accepts localhost + EAS web
+    for (const origin of ESSENTIAL_WEB_ORIGINS) {
+        if (origin && !origins.includes(origin)) {
+            origins.push(origin);
+        }
     }
     
     // Log trusted origins for debugging
