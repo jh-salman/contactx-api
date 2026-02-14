@@ -694,7 +694,7 @@ const shareVisitorContact = async (
     if (visitorCard.userId !== visitorId) throw new Error("You can only share your own cards");
 
     const ownerId = ownerCard.userId;
-    if (ownerId === visitorId) throw new Error("You cannot share with yourself");
+    // if (ownerId === visitorId) throw new Error("You cannot share with yourself");
 
     const lat = scanLocation?.latitude ?? null;
     const lon = scanLocation?.longitude ?? null;

@@ -2385,6 +2385,84 @@ var createReverseContactRequest = async (ownerCardId, customerCardId, message) =
   });
   return request;
 };
+var shareVisitorContact = async (visitorId, ownerCardId, visitorCardId, scanLocation) => {
+  if (!visitorId) throw new Error("Unauthorized");
+  if (!ownerCardId) throw new Error("Owner card ID is required");
+  if (!visitorCardId) throw new Error("Visitor card ID is required");
+  const ownerCard = await prisma.card.findUnique({
+    where: { id: ownerCardId },
+    select: { id: true, userId: true }
+  });
+  if (!ownerCard) throw new Error("Scanned card not found");
+  const visitorCard = await prisma.card.findUnique({
+    where: { id: visitorCardId },
+    include: { personalInfo: true }
+  });
+  if (!visitorCard) throw new Error("Your card not found");
+  if (visitorCard.userId !== visitorId) throw new Error("You can only share your own cards");
+  const ownerId = ownerCard.userId;
+  if (ownerId === visitorId) throw new Error("You cannot share with yourself");
+  const lat = scanLocation?.latitude ?? null;
+  const lon = scanLocation?.longitude ?? null;
+  const city = scanLocation?.city ?? "";
+  const country = scanLocation?.country ?? "";
+  const pi = visitorCard.personalInfo;
+  const contactData = {
+    firstName: pi?.firstName ?? "",
+    lastName: pi?.lastName ?? "",
+    phone: pi?.phoneNumber ?? "",
+    email: pi?.email ?? "",
+    company: pi?.company ?? "",
+    jobTitle: pi?.jobTitle ?? "",
+    logo: visitorCard.logo ?? "",
+    profile_img: pi?.profile_img ?? visitorCard.profile ?? "",
+    latitude: lat,
+    longitude: lon,
+    city,
+    country
+  };
+  const existingShare = await prisma.visitorContactShare.findFirst({
+    where: {
+      ownerCardId,
+      visitorCardId,
+      status: "approved"
+    }
+  });
+  if (existingShare) {
+    return { alreadySaved: true, share: existingShare };
+  }
+  const share = await prisma.visitorContactShare.create({
+    data: {
+      ownerCardId,
+      visitorCardId,
+      ownerId,
+      visitorId,
+      status: "approved",
+      latitude: lat,
+      longitude: lon,
+      city,
+      country
+    }
+  });
+  const existingContact = await prisma.contact.findFirst({
+    where: { userId: ownerId, cardId: visitorCardId }
+  });
+  if (!existingContact) {
+    await prisma.contact.create({
+      data: {
+        userId: ownerId,
+        cardId: visitorCardId,
+        ...contactData
+      }
+    });
+  } else {
+    await prisma.contact.update({
+      where: { id: existingContact.id },
+      data: contactData
+    });
+  }
+  return { alreadySaved: false, share };
+};
 var contactServices = {
   saveContact,
   getAllContacts,
@@ -2395,7 +2473,8 @@ var contactServices = {
   getSentRequests,
   approveRequest,
   rejectRequest,
-  createReverseContactRequest
+  createReverseContactRequest,
+  shareVisitorContact
 };
 
 // src/modules/contacts/contacts.controller.ts
@@ -2699,6 +2778,42 @@ var createReversePermissionRequestController = async (req, res, next) => {
     next(error);
   }
 };
+var shareVisitorContactController = async (req, res, next) => {
+  try {
+    const visitorId = req.user?.id;
+    const { ownerCardId, visitorCardId, scanLocation } = req.body;
+    if (!visitorId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    if (!ownerCardId) {
+      return res.status(400).json({ success: false, message: "Owner card ID is required" });
+    }
+    if (!visitorCardId) {
+      return res.status(400).json({ success: false, message: "Visitor card ID is required" });
+    }
+    const result = await contactServices.shareVisitorContact(
+      visitorId,
+      ownerCardId,
+      visitorCardId,
+      scanLocation
+    );
+    return res.status(201).json({
+      success: true,
+      message: result.alreadySaved ? "Already shared" : "Contact shared successfully",
+      data: result.share,
+      alreadySaved: result.alreadySaved
+    });
+  } catch (error) {
+    logger.error("Share visitor contact error", error);
+    if (!res.headersSent) {
+      return res.status(400).json({
+        success: false,
+        message: error.message || "Failed to share contact"
+      });
+    }
+    next(error);
+  }
+};
 var contactController = {
   saveContactController,
   getAllContactsController,
@@ -2709,7 +2824,8 @@ var contactController = {
   getSentRequestsController,
   approveRequestController,
   rejectRequestController,
-  createReversePermissionRequestController
+  createReversePermissionRequestController,
+  shareVisitorContactController
 };
 
 // src/modules/contacts/contacts.routes.ts
@@ -2724,6 +2840,7 @@ router4.get("/requests/sent", contactController.getSentRequestsController);
 router4.post("/requests/:requestId/approve", contactController.approveRequestController);
 router4.post("/requests/:requestId/reject", contactController.rejectRequestController);
 router4.post("/request-reverse", contactController.createReversePermissionRequestController);
+router4.post("/visitor/share-contact", contactController.shareVisitorContactController);
 var contactRoutes = router4;
 
 // src/modules/upload/upload.routes.ts
