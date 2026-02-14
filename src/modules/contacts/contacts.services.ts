@@ -664,6 +664,105 @@ const createReverseContactRequest = async (
     return request;
 };
 
+// Visitor shares their card with owner (scanned person) - auto-saves contact on owner's account
+const shareVisitorContact = async (
+    visitorId: string,
+    ownerCardId: string,
+    visitorCardId: string,
+    scanLocation?: {
+        latitude?: number;
+        longitude?: number;
+        city?: string;
+        country?: string;
+    }
+) => {
+    if (!visitorId) throw new Error("Unauthorized");
+    if (!ownerCardId) throw new Error("Owner card ID is required");
+    if (!visitorCardId) throw new Error("Visitor card ID is required");
+
+    const ownerCard = await prisma.card.findUnique({
+        where: { id: ownerCardId },
+        select: { id: true, userId: true },
+    });
+    if (!ownerCard) throw new Error("Scanned card not found");
+
+    const visitorCard = await prisma.card.findUnique({
+        where: { id: visitorCardId },
+        include: { personalInfo: true },
+    });
+    if (!visitorCard) throw new Error("Your card not found");
+    if (visitorCard.userId !== visitorId) throw new Error("You can only share your own cards");
+
+    const ownerId = ownerCard.userId;
+    if (ownerId === visitorId) throw new Error("You cannot share with yourself");
+
+    const lat = scanLocation?.latitude ?? null;
+    const lon = scanLocation?.longitude ?? null;
+    const city = scanLocation?.city ?? "";
+    const country = scanLocation?.country ?? "";
+
+    const pi = visitorCard.personalInfo;
+    const contactData = {
+        firstName: pi?.firstName ?? "",
+        lastName: pi?.lastName ?? "",
+        phone: pi?.phoneNumber ?? "",
+        email: pi?.email ?? "",
+        company: pi?.company ?? "",
+        jobTitle: pi?.jobTitle ?? "",
+        logo: visitorCard.logo ?? "",
+        profile_img: pi?.profile_img ?? visitorCard.profile ?? "",
+        latitude: lat,
+        longitude: lon,
+        city,
+        country,
+    };
+
+    const existingShare = await prisma.visitorContactShare.findFirst({
+        where: {
+            ownerCardId,
+            visitorCardId,
+            status: "approved",
+        },
+    });
+    if (existingShare) {
+        return { alreadySaved: true, share: existingShare };
+    }
+
+    const share = await prisma.visitorContactShare.create({
+        data: {
+            ownerCardId,
+            visitorCardId,
+            ownerId,
+            visitorId,
+            status: "approved",
+            latitude: lat,
+            longitude: lon,
+            city,
+            country,
+        },
+    });
+
+    const existingContact = await prisma.contact.findFirst({
+        where: { userId: ownerId, cardId: visitorCardId },
+    });
+    if (!existingContact) {
+        await prisma.contact.create({
+            data: {
+                userId: ownerId,
+                cardId: visitorCardId,
+                ...contactData,
+            },
+        });
+    } else {
+        await prisma.contact.update({
+            where: { id: existingContact.id },
+            data: contactData,
+        });
+    }
+
+    return { alreadySaved: false, share };
+};
+
 export const contactServices = {
     saveContact,
     getAllContacts,
@@ -675,4 +774,5 @@ export const contactServices = {
     approveRequest,
     rejectRequest,
     createReverseContactRequest,
+    shareVisitorContact,
 };

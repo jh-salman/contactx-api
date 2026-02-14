@@ -31,4 +31,7 @@ router.post("/requests/:requestId/reject", contactController.rejectRequestContro
 // When customer saves owner's contact, automatically create request from owner to customer
 router.post("/request-reverse", contactController.createReversePermissionRequestController);
 
+// POST /contacts/visitor/share-contact - Scanner shares their card with scanned person (auto-saves on owner)
+router.post("/visitor/share-contact", contactController.shareVisitorContactController);
+
 export const contactRoutes = router;

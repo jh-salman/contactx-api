@@ -389,6 +389,51 @@ const createReversePermissionRequestController = async (req: Request, res: Respo
     }
 };
 
+// Visitor shares their card with owner (scanned person) - auto-saves on owner's account
+const shareVisitorContactController = async (req: Request, res: Response, next: any) => {
+    try {
+        const visitorId = req.user?.id as string | undefined;
+        const { ownerCardId, visitorCardId, scanLocation } = req.body as {
+            ownerCardId?: string;
+            visitorCardId?: string;
+            scanLocation?: { latitude?: number; longitude?: number; city?: string; country?: string };
+        };
+
+        if (!visitorId) {
+            return res.status(401).json({ success: false, message: "Unauthorized" });
+        }
+        if (!ownerCardId) {
+            return res.status(400).json({ success: false, message: "Owner card ID is required" });
+        }
+        if (!visitorCardId) {
+            return res.status(400).json({ success: false, message: "Visitor card ID is required" });
+        }
+
+        const result = await contactServices.shareVisitorContact(
+            visitorId,
+            ownerCardId,
+            visitorCardId,
+            scanLocation
+        );
+
+        return res.status(201).json({
+            success: true,
+            message: result.alreadySaved ? "Already shared" : "Contact shared successfully",
+            data: result.share,
+            alreadySaved: result.alreadySaved,
+        });
+    } catch (error: any) {
+        logger.error("Share visitor contact error", error);
+        if (!res.headersSent) {
+            return res.status(400).json({
+                success: false,
+                message: error.message || "Failed to share contact",
+            });
+        }
+        next(error);
+    }
+};
+
 export const contactController = { 
     saveContactController, 
     getAllContactsController, 
@@ -400,4 +445,5 @@ export const contactController = {
     approveRequestController,
     rejectRequestController,
     createReversePermissionRequestController,
+    shareVisitorContactController,
 };

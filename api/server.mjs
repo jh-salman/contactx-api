@@ -1942,7 +1942,6 @@ var saveContact = async (userId, cardId, data) => {
     select: { id: true, userId: true }
   });
   if (!card) throw new Error("Card not found");
-  if (card.userId === userId) throw new Error("You cannot save your own card");
   let normalizedEmail = "";
   if (data.email !== void 0) {
     try {
