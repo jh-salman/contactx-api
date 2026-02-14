@@ -571,6 +571,12 @@ var sendOTPViaWhatsApp = async (phoneNumber2, otpCode, options) => {
 };
 
 // src/lib/auth.ts
+var ESSENTIAL_WEB_ORIGINS = [
+  "http://localhost:8081",
+  // Expo dev server (web)
+  "https://salonx--wtbnn1wdao.expo.app"
+  // EAS web deploy
+];
 var getTrustedOrigins = () => {
   const envOrigins = process.env.AUTH_TRUSTED_ORIGINS;
   let origins = [];
@@ -593,6 +599,11 @@ var getTrustedOrigins = () => {
       process.env.FRONTEND_URL,
       process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null
     ].filter(Boolean);
+  }
+  for (const origin of ESSENTIAL_WEB_ORIGINS) {
+    if (origin && !origins.includes(origin)) {
+      origins.push(origin);
+    }
   }
   logger.info("Better Auth Trusted Origins", { origins });
   return origins;

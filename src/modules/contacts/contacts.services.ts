@@ -53,7 +53,7 @@ const saveContact = async (
     
     // ✅ Visitor can save Owner's contact - no permission check needed
     // Just prevent saving own card
-    if (card.userId === userId) throw new Error("You cannot save your own card");
+    // if (card.userId === userId) throw new Error("You cannot save your own card");
 
     // 4️⃣ Normalize and validate email if provided
     // Only validate email format if phone is not provided (email becomes required)
