@@ -652,9 +652,9 @@ export const sendOTPViaWhatsApp = async (
     from?: string; // Default: whatsapp:+14155238886
   }
 ): Promise<{ success: boolean; messageSid?: string; status?: string; errorCode?: number; errorMessage?: string }> => {
-  const whatsappFromNumber = options?.from || process.env.TWILIO_WHATSAPP_NUMBER || 'whatsapp:+14155238886';
-  const contentSid = options?.contentSid || process.env.TWILIO_WHATSAPP_OTP_CONTENT_SID || 'HX229f5a04fd0510ce1b071852155d3e75';
-  
+  const whatsappFromNumber = options?.from || process.env.TWILIO_WHATSAPP_NUMBER || 'whatsapp:+15558678965';
+  const contentSid = options?.contentSid || process.env.TWILIO_WHATSAPP_OTP_CONTENT_SID || 'HX9e03d7b01e72c48bb5c29161d3efc107';
+
   try {
     const client = getTwilioClient();
     if (!client) {

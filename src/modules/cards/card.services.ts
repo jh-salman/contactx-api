@@ -25,6 +25,12 @@ const createCard = async (
         note?: string;
         banner?: string;
         profile_img?: string;
+        middleName?: string;
+        prefix?: string;
+        suffix?: string;
+        pronoun?: string;
+        preferred?: string;
+        maidenName?: string;
     },
     socialLinks?: any[]
 ) => {
@@ -62,6 +68,12 @@ const createCard = async (
                         note: personalInfo.note ?? null,
                         banner: personalInfo.banner ?? null,
                         profile_img: personalInfo.profile_img ?? null,
+                        middleName: personalInfo.middleName ?? null,
+                        prefix: personalInfo.prefix ?? null,
+                        suffix: personalInfo.suffix ?? null,
+                        pronoun: personalInfo.pronoun ?? null,
+                        preferred: personalInfo.preferred ?? null,
+                        maidenName: personalInfo.maidenName ?? null,
                     },
                 },
             }),
@@ -199,6 +211,12 @@ const updateCard = async (
             note?: string;
             banner?: string;
             profile_img?: string;
+            middleName?: string;
+            prefix?: string;
+            suffix?: string;
+            pronoun?: string;
+            preferred?: string;
+            maidenName?: string;
         };
         socialLinks?: any[];
     }
@@ -259,6 +277,12 @@ const updateCard = async (
                             note: payload.personalInfo.note ?? null,
                             banner: payload.personalInfo.banner ?? null,
                             profile_img: payload.personalInfo.profile_img ?? null,
+                            middleName: payload.personalInfo.middleName ?? null,
+                            prefix: payload.personalInfo.prefix ?? null,
+                            suffix: payload.personalInfo.suffix ?? null,
+                            pronoun: payload.personalInfo.pronoun ?? null,
+                            preferred: payload.personalInfo.preferred ?? null,
+                            maidenName: payload.personalInfo.maidenName ?? null,
                         },
                         update: {
                             ...(payload.personalInfo.firstName !== undefined && { firstName: payload.personalInfo.firstName }),
@@ -272,6 +296,12 @@ const updateCard = async (
                             ...(payload.personalInfo.note !== undefined && { note: payload.personalInfo.note }),
                             ...(payload.personalInfo.banner !== undefined && { banner: payload.personalInfo.banner }),
                             ...(payload.personalInfo.profile_img !== undefined && { profile_img: payload.personalInfo.profile_img }),
+                            ...(payload.personalInfo.middleName !== undefined && { middleName: payload.personalInfo.middleName }),
+                            ...(payload.personalInfo.prefix !== undefined && { prefix: payload.personalInfo.prefix }),
+                            ...(payload.personalInfo.suffix !== undefined && { suffix: payload.personalInfo.suffix }),
+                            ...(payload.personalInfo.pronoun !== undefined && { pronoun: payload.personalInfo.pronoun }),
+                            ...(payload.personalInfo.preferred !== undefined && { preferred: payload.personalInfo.preferred }),
+                            ...(payload.personalInfo.maidenName !== undefined && { maidenName: payload.personalInfo.maidenName }),
                         },
                     },
                 },

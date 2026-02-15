@@ -24,14 +24,14 @@ var config = {
   "clientVersion": "7.2.0",
   "engineVersion": "0c8ef2ce45c83248ab3df073180d5eda9e8be7a3",
   "activeProvider": "postgresql",
-  "inlineSchema": '// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\ngenerator client {\n  provider = "prisma-client"\n  output   = "../generated/prisma"\n}\n\ndatasource db {\n  provider = "postgresql"\n}\n\nmodel User {\n  id               String                @id\n  name             String\n  email            String\n  emailVerified    Boolean               @default(false)\n  image            String?\n  cards            Card[]\n  contacts         Contact[]\n  ownerShares      VisitorContactShare[] @relation("OwnerShares")\n  visitorShares    VisitorContactShare[] @relation("VisitorShares")\n  sentRequests     ContactRequest[]      @relation("SentRequests")\n  receivedRequests ContactRequest[]      @relation("ReceivedRequests")\n\n  createdAt DateTime  @default(now())\n  updatedAt DateTime  @updatedAt\n  sessions  Session[]\n  accounts  Account[]\n\n  phoneNumber         String?\n  phoneNumberVerified Boolean?\n\n  @@unique([email])\n  @@unique([phoneNumber])\n  @@map("user")\n}\n\nmodel Session {\n  id        String   @id\n  expiresAt DateTime\n  token     String\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n  ipAddress String?\n  userAgent String?\n  userId    String\n  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)\n\n  @@unique([token])\n  @@index([userId])\n  @@map("session")\n}\n\nmodel Account {\n  id                    String    @id\n  accountId             String\n  providerId            String\n  userId                String\n  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)\n  accessToken           String?\n  refreshToken          String?\n  idToken               String?\n  accessTokenExpiresAt  DateTime?\n  refreshTokenExpiresAt DateTime?\n  scope                 String?\n  password              String?\n  createdAt             DateTime  @default(now())\n  updatedAt             DateTime  @updatedAt\n\n  @@index([userId])\n  @@map("account")\n}\n\nmodel Verification {\n  id         String   @id\n  identifier String\n  value      String\n  expiresAt  DateTime\n  createdAt  DateTime @default(now())\n  updatedAt  DateTime @updatedAt\n\n  @@index([identifier])\n  @@map("verification")\n}\n\nmodel Card {\n  id                String                @id @default(cuid())\n  userId            String\n  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)\n  cardTitle         String                @default("ConactX")\n  cardColor         String                @default("black")\n  logo              String?\n  profile           String?\n  cover             String?\n  imagesAndLayouts  Json?\n  isFavorite        Boolean               @default(false)\n  personalInfo      PersonalInfo?\n  socialLinks       socialLinks?\n  qrCode            String?\n  qrImage           String?\n  scan              cardScan[]\n  contacts          Contact[]\n  contactRequests   ContactRequest[]\n  ownerCardShares   VisitorContactShare[] @relation("OwnerCardShares")\n  visitorCardShares VisitorContactShare[] @relation("VisitorCardShares")\n  setting           Json?\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@index([userId])\n  @@map("cards")\n}\n\nmodel PersonalInfo {\n  id          String  @id @default(cuid())\n  cardId      String  @unique\n  card        Card    @relation(fields: [cardId], references: [id], onDelete: Cascade)\n  firstName   String?\n  lastName    String?\n  jobTitle    String?\n  phoneNumber String  @unique\n  email       String? @unique\n  company     String?\n  image       String?\n  logo        String?\n  note        String?\n  banner      String?\n  profile_img String?\n\n  @@index([cardId])\n  @@map("personal_info")\n}\n\nmodel socialLinks {\n  id     String @id @default(cuid())\n  cardId String @unique\n  card   Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)\n  links  Json[]\n\n  @@index([cardId])\n  @@map("social_links")\n}\n\nmodel cardScan {\n  id          String  @id @default(cuid())\n  cardId      String\n  card        Card    @relation(fields: [cardId], references: [id], onDelete: Cascade)\n  ip          String?\n  userAgent   String?\n  source      String  @default("qr") // "qr" | "link"\n  latitude    Float?\n  longitude   Float?\n  city        String?\n  country     String?\n  banner      String?\n  profile_img String?\n\n  createdAt DateTime @default(now())\n\n  @@index([cardId])\n  @@map("card_scans")\n}\n\nmodel Contact {\n  id          String  @id @default(uuid())\n  userId      String\n  cardId      String\n  firstName   String\n  lastName    String\n  phone       String\n  email       String?\n  company     String?\n  jobTitle    String?\n  image       String?\n  logo        String?\n  banner      String?\n  note        String?\n  profile_img String?\n  latitude    Float?\n  longitude   Float?\n  city        String?\n  country     String?\n\n  user User @relation(fields: [userId], references: [id], onDelete: Cascade)\n  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@index([userId])\n  @@index([cardId])\n  @@map("contacts")\n}\n\nmodel VisitorContactShare {\n  id            String   @id @default(uuid())\n  ownerCardId   String\n  visitorCardId String\n  ownerId       String\n  visitorId     String\n  status        String   @default("pending_owner_approval") // "pending_owner_approval" | "approved" | "rejected"\n  latitude      Float?\n  longitude     Float?\n  city          String?\n  country       String?\n  createdAt     DateTime @default(now())\n  updatedAt     DateTime @updatedAt\n\n  // Relations\n  ownerCard   Card @relation("OwnerCardShares", fields: [ownerCardId], references: [id], onDelete: Cascade)\n  visitorCard Card @relation("VisitorCardShares", fields: [visitorCardId], references: [id], onDelete: Cascade)\n  owner       User @relation("OwnerShares", fields: [ownerId], references: [id])\n  visitor     User @relation("VisitorShares", fields: [visitorId], references: [id])\n\n  @@index([ownerId])\n  @@index([visitorId])\n  @@index([ownerCardId])\n  @@index([visitorCardId])\n  @@index([status])\n  @@map("visitor_contact_shares")\n}\n\nmodel ContactRequest {\n  id          String   @id @default(uuid())\n  cardId      String\n  requestedBy String\n  requestedTo String\n  status      String   @default("pending") // "pending" | "approved" | "rejected"\n  message     String?\n  createdAt   DateTime @default(now())\n  updatedAt   DateTime @updatedAt\n\n  // Relations\n  card            Card @relation(fields: [cardId], references: [id], onDelete: Cascade)\n  requestedByUser User @relation("SentRequests", fields: [requestedBy], references: [id])\n  requestedToUser User @relation("ReceivedRequests", fields: [requestedTo], references: [id])\n\n  @@index([requestedBy])\n  @@index([requestedTo])\n  @@index([cardId])\n  @@index([status])\n  @@map("contact_requests")\n}\n',
+  "inlineSchema": '// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\ngenerator client {\n  provider = "prisma-client"\n  output   = "../generated/prisma"\n}\n\ndatasource db {\n  provider = "postgresql"\n}\n\nmodel User {\n  id            String                @id\n  name          String\n  email         String\n  emailVerified Boolean               @default(false)\n  image         String?\n  cards         Card[]\n  contacts      Contact[]\n  ownerShares   VisitorContactShare[] @relation("OwnerShares")\n  visitorShares VisitorContactShare[] @relation("VisitorShares")\n\n  createdAt DateTime  @default(now())\n  updatedAt DateTime  @updatedAt\n  sessions  Session[]\n  accounts  Account[]\n\n  phoneNumber         String?\n  phoneNumberVerified Boolean?\n\n  @@unique([email])\n  @@unique([phoneNumber])\n  @@map("user")\n}\n\nmodel Session {\n  id        String   @id\n  expiresAt DateTime\n  token     String\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n  ipAddress String?\n  userAgent String?\n  userId    String\n  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)\n\n  @@unique([token])\n  @@index([userId])\n  @@map("session")\n}\n\nmodel Account {\n  id                    String    @id\n  accountId             String\n  providerId            String\n  userId                String\n  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)\n  accessToken           String?\n  refreshToken          String?\n  idToken               String?\n  accessTokenExpiresAt  DateTime?\n  refreshTokenExpiresAt DateTime?\n  scope                 String?\n  password              String?\n  createdAt             DateTime  @default(now())\n  updatedAt             DateTime  @updatedAt\n\n  @@index([userId])\n  @@map("account")\n}\n\nmodel Verification {\n  id         String   @id\n  identifier String\n  value      String\n  expiresAt  DateTime\n  createdAt  DateTime @default(now())\n  updatedAt  DateTime @updatedAt\n\n  @@index([identifier])\n  @@map("verification")\n}\n\nmodel Card {\n  id                String                @id @default(cuid())\n  userId            String\n  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)\n  cardTitle         String                @default("ConactX")\n  cardColor         String                @default("black")\n  logo              String?\n  profile           String?\n  cover             String?\n  imagesAndLayouts  Json?\n  isFavorite        Boolean               @default(false)\n  personalInfo      PersonalInfo?\n  socialLinks       socialLinks?\n  qrCode            String?\n  qrImage           String?\n  scan              cardScan[]\n  contacts          Contact[]\n  ownerCardShares   VisitorContactShare[] @relation("OwnerCardShares")\n  visitorCardShares VisitorContactShare[] @relation("VisitorCardShares")\n  setting           Json?\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@index([userId])\n  @@map("cards")\n}\n\nmodel PersonalInfo {\n  id          String  @id @default(cuid())\n  cardId      String  @unique\n  card        Card    @relation(fields: [cardId], references: [id], onDelete: Cascade)\n  firstName   String?\n  lastName    String?\n  jobTitle    String?\n  phoneNumber String? @unique\n  email       String? @unique\n  company     String?\n  image       String?\n  logo        String?\n  note        String?\n  banner      String?\n  profile_img String?\n  middleName  String?\n  prefix      String?\n  suffix      String?\n  pronoun     String?\n  preferred   String?\n  maidenName  String?\n\n  @@index([cardId])\n  @@map("personal_info")\n}\n\nmodel socialLinks {\n  id     String @id @default(cuid())\n  cardId String @unique\n  card   Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)\n  links  Json[]\n\n  @@index([cardId])\n  @@map("social_links")\n}\n\nmodel cardScan {\n  id               String  @id @default(cuid())\n  cardId           String\n  card             Card    @relation(fields: [cardId], references: [id], onDelete: Cascade)\n  ip               String?\n  userAgent        String?\n  source           String  @default("qr") // "qr" | "link"\n  latitude         Float?\n  longitude        Float?\n  city             String?\n  country          String?\n  street           String?\n  streetNumber     String?\n  district         String?\n  region           String?\n  subregion        String?\n  postalCode       String?\n  addressName      String? // village / place name\n  formattedAddress String?\n  isoCountryCode   String?\n  banner           String?\n  profile_img      String?\n\n  createdAt DateTime @default(now())\n\n  @@index([cardId])\n  @@map("card_scans")\n}\n\nmodel Contact {\n  id               String  @id @default(uuid())\n  userId           String\n  cardId           String?\n  firstName        String?\n  lastName         String?\n  phone            String?\n  email            String?\n  company          String?\n  jobTitle         String?\n  image            String?\n  logo             String?\n  banner           String?\n  note             String?\n  profile_img      String?\n  latitude         Float?\n  longitude        Float?\n  city             String?\n  country          String?\n  street           String?\n  streetNumber     String?\n  district         String?\n  region           String?\n  subregion        String?\n  postalCode       String?\n  addressName      String? // village / place name\n  formattedAddress String?\n  isoCountryCode   String?\n\n  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)\n  card Card? @relation(fields: [cardId], references: [id], onDelete: Cascade)\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  @@index([userId])\n  @@index([cardId])\n  @@map("contacts")\n}\n\nmodel VisitorContactShare {\n  id               String   @id @default(uuid())\n  ownerCardId      String\n  visitorCardId    String\n  ownerId          String\n  visitorId        String\n  status           String   @default("pending_owner_approval") // "pending_owner_approval" | "approved" | "rejected"\n  latitude         Float?\n  longitude        Float?\n  city             String?\n  country          String?\n  street           String?\n  streetNumber     String?\n  district         String?\n  region           String?\n  subregion        String?\n  postalCode       String?\n  addressName      String?\n  formattedAddress String?\n  isoCountryCode   String?\n  createdAt        DateTime @default(now())\n  updatedAt        DateTime @updatedAt\n\n  // Relations\n  ownerCard   Card @relation("OwnerCardShares", fields: [ownerCardId], references: [id], onDelete: Cascade)\n  visitorCard Card @relation("VisitorCardShares", fields: [visitorCardId], references: [id], onDelete: Cascade)\n  owner       User @relation("OwnerShares", fields: [ownerId], references: [id])\n  visitor     User @relation("VisitorShares", fields: [visitorId], references: [id])\n\n  @@index([ownerId])\n  @@index([visitorId])\n  @@index([ownerCardId])\n  @@index([visitorCardId])\n  @@index([status])\n  @@map("visitor_contact_shares")\n}\n',
   "runtimeDataModel": {
     "models": {},
     "enums": {},
     "types": {}
   }
 };
-config.runtimeDataModel = JSON.parse('{"models":{"User":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"name","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"emailVerified","kind":"scalar","type":"Boolean"},{"name":"image","kind":"scalar","type":"String"},{"name":"cards","kind":"object","type":"Card","relationName":"CardToUser"},{"name":"contacts","kind":"object","type":"Contact","relationName":"ContactToUser"},{"name":"ownerShares","kind":"object","type":"VisitorContactShare","relationName":"OwnerShares"},{"name":"visitorShares","kind":"object","type":"VisitorContactShare","relationName":"VisitorShares"},{"name":"sentRequests","kind":"object","type":"ContactRequest","relationName":"SentRequests"},{"name":"receivedRequests","kind":"object","type":"ContactRequest","relationName":"ReceivedRequests"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"sessions","kind":"object","type":"Session","relationName":"SessionToUser"},{"name":"accounts","kind":"object","type":"Account","relationName":"AccountToUser"},{"name":"phoneNumber","kind":"scalar","type":"String"},{"name":"phoneNumberVerified","kind":"scalar","type":"Boolean"}],"dbName":"user"},"Session":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"expiresAt","kind":"scalar","type":"DateTime"},{"name":"token","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"ipAddress","kind":"scalar","type":"String"},{"name":"userAgent","kind":"scalar","type":"String"},{"name":"userId","kind":"scalar","type":"String"},{"name":"user","kind":"object","type":"User","relationName":"SessionToUser"}],"dbName":"session"},"Account":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"accountId","kind":"scalar","type":"String"},{"name":"providerId","kind":"scalar","type":"String"},{"name":"userId","kind":"scalar","type":"String"},{"name":"user","kind":"object","type":"User","relationName":"AccountToUser"},{"name":"accessToken","kind":"scalar","type":"String"},{"name":"refreshToken","kind":"scalar","type":"String"},{"name":"idToken","kind":"scalar","type":"String"},{"name":"accessTokenExpiresAt","kind":"scalar","type":"DateTime"},{"name":"refreshTokenExpiresAt","kind":"scalar","type":"DateTime"},{"name":"scope","kind":"scalar","type":"String"},{"name":"password","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"}],"dbName":"account"},"Verification":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"identifier","kind":"scalar","type":"String"},{"name":"value","kind":"scalar","type":"String"},{"name":"expiresAt","kind":"scalar","type":"DateTime"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"}],"dbName":"verification"},"Card":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"userId","kind":"scalar","type":"String"},{"name":"user","kind":"object","type":"User","relationName":"CardToUser"},{"name":"cardTitle","kind":"scalar","type":"String"},{"name":"cardColor","kind":"scalar","type":"String"},{"name":"logo","kind":"scalar","type":"String"},{"name":"profile","kind":"scalar","type":"String"},{"name":"cover","kind":"scalar","type":"String"},{"name":"imagesAndLayouts","kind":"scalar","type":"Json"},{"name":"isFavorite","kind":"scalar","type":"Boolean"},{"name":"personalInfo","kind":"object","type":"PersonalInfo","relationName":"CardToPersonalInfo"},{"name":"socialLinks","kind":"object","type":"socialLinks","relationName":"CardTosocialLinks"},{"name":"qrCode","kind":"scalar","type":"String"},{"name":"qrImage","kind":"scalar","type":"String"},{"name":"scan","kind":"object","type":"cardScan","relationName":"CardTocardScan"},{"name":"contacts","kind":"object","type":"Contact","relationName":"CardToContact"},{"name":"contactRequests","kind":"object","type":"ContactRequest","relationName":"CardToContactRequest"},{"name":"ownerCardShares","kind":"object","type":"VisitorContactShare","relationName":"OwnerCardShares"},{"name":"visitorCardShares","kind":"object","type":"VisitorContactShare","relationName":"VisitorCardShares"},{"name":"setting","kind":"scalar","type":"Json"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"}],"dbName":"cards"},"PersonalInfo":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"cardId","kind":"scalar","type":"String"},{"name":"card","kind":"object","type":"Card","relationName":"CardToPersonalInfo"},{"name":"firstName","kind":"scalar","type":"String"},{"name":"lastName","kind":"scalar","type":"String"},{"name":"jobTitle","kind":"scalar","type":"String"},{"name":"phoneNumber","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"company","kind":"scalar","type":"String"},{"name":"image","kind":"scalar","type":"String"},{"name":"logo","kind":"scalar","type":"String"},{"name":"note","kind":"scalar","type":"String"},{"name":"banner","kind":"scalar","type":"String"},{"name":"profile_img","kind":"scalar","type":"String"}],"dbName":"personal_info"},"socialLinks":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"cardId","kind":"scalar","type":"String"},{"name":"card","kind":"object","type":"Card","relationName":"CardTosocialLinks"},{"name":"links","kind":"scalar","type":"Json"}],"dbName":"social_links"},"cardScan":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"cardId","kind":"scalar","type":"String"},{"name":"card","kind":"object","type":"Card","relationName":"CardTocardScan"},{"name":"ip","kind":"scalar","type":"String"},{"name":"userAgent","kind":"scalar","type":"String"},{"name":"source","kind":"scalar","type":"String"},{"name":"latitude","kind":"scalar","type":"Float"},{"name":"longitude","kind":"scalar","type":"Float"},{"name":"city","kind":"scalar","type":"String"},{"name":"country","kind":"scalar","type":"String"},{"name":"banner","kind":"scalar","type":"String"},{"name":"profile_img","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"}],"dbName":"card_scans"},"Contact":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"userId","kind":"scalar","type":"String"},{"name":"cardId","kind":"scalar","type":"String"},{"name":"firstName","kind":"scalar","type":"String"},{"name":"lastName","kind":"scalar","type":"String"},{"name":"phone","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"company","kind":"scalar","type":"String"},{"name":"jobTitle","kind":"scalar","type":"String"},{"name":"image","kind":"scalar","type":"String"},{"name":"logo","kind":"scalar","type":"String"},{"name":"banner","kind":"scalar","type":"String"},{"name":"note","kind":"scalar","type":"String"},{"name":"profile_img","kind":"scalar","type":"String"},{"name":"latitude","kind":"scalar","type":"Float"},{"name":"longitude","kind":"scalar","type":"Float"},{"name":"city","kind":"scalar","type":"String"},{"name":"country","kind":"scalar","type":"String"},{"name":"user","kind":"object","type":"User","relationName":"ContactToUser"},{"name":"card","kind":"object","type":"Card","relationName":"CardToContact"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"}],"dbName":"contacts"},"VisitorContactShare":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"ownerCardId","kind":"scalar","type":"String"},{"name":"visitorCardId","kind":"scalar","type":"String"},{"name":"ownerId","kind":"scalar","type":"String"},{"name":"visitorId","kind":"scalar","type":"String"},{"name":"status","kind":"scalar","type":"String"},{"name":"latitude","kind":"scalar","type":"Float"},{"name":"longitude","kind":"scalar","type":"Float"},{"name":"city","kind":"scalar","type":"String"},{"name":"country","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"ownerCard","kind":"object","type":"Card","relationName":"OwnerCardShares"},{"name":"visitorCard","kind":"object","type":"Card","relationName":"VisitorCardShares"},{"name":"owner","kind":"object","type":"User","relationName":"OwnerShares"},{"name":"visitor","kind":"object","type":"User","relationName":"VisitorShares"}],"dbName":"visitor_contact_shares"},"ContactRequest":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"cardId","kind":"scalar","type":"String"},{"name":"requestedBy","kind":"scalar","type":"String"},{"name":"requestedTo","kind":"scalar","type":"String"},{"name":"status","kind":"scalar","type":"String"},{"name":"message","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"card","kind":"object","type":"Card","relationName":"CardToContactRequest"},{"name":"requestedByUser","kind":"object","type":"User","relationName":"SentRequests"},{"name":"requestedToUser","kind":"object","type":"User","relationName":"ReceivedRequests"}],"dbName":"contact_requests"}},"enums":{},"types":{}}');
+config.runtimeDataModel = JSON.parse('{"models":{"User":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"name","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"emailVerified","kind":"scalar","type":"Boolean"},{"name":"image","kind":"scalar","type":"String"},{"name":"cards","kind":"object","type":"Card","relationName":"CardToUser"},{"name":"contacts","kind":"object","type":"Contact","relationName":"ContactToUser"},{"name":"ownerShares","kind":"object","type":"VisitorContactShare","relationName":"OwnerShares"},{"name":"visitorShares","kind":"object","type":"VisitorContactShare","relationName":"VisitorShares"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"sessions","kind":"object","type":"Session","relationName":"SessionToUser"},{"name":"accounts","kind":"object","type":"Account","relationName":"AccountToUser"},{"name":"phoneNumber","kind":"scalar","type":"String"},{"name":"phoneNumberVerified","kind":"scalar","type":"Boolean"}],"dbName":"user"},"Session":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"expiresAt","kind":"scalar","type":"DateTime"},{"name":"token","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"ipAddress","kind":"scalar","type":"String"},{"name":"userAgent","kind":"scalar","type":"String"},{"name":"userId","kind":"scalar","type":"String"},{"name":"user","kind":"object","type":"User","relationName":"SessionToUser"}],"dbName":"session"},"Account":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"accountId","kind":"scalar","type":"String"},{"name":"providerId","kind":"scalar","type":"String"},{"name":"userId","kind":"scalar","type":"String"},{"name":"user","kind":"object","type":"User","relationName":"AccountToUser"},{"name":"accessToken","kind":"scalar","type":"String"},{"name":"refreshToken","kind":"scalar","type":"String"},{"name":"idToken","kind":"scalar","type":"String"},{"name":"accessTokenExpiresAt","kind":"scalar","type":"DateTime"},{"name":"refreshTokenExpiresAt","kind":"scalar","type":"DateTime"},{"name":"scope","kind":"scalar","type":"String"},{"name":"password","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"}],"dbName":"account"},"Verification":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"identifier","kind":"scalar","type":"String"},{"name":"value","kind":"scalar","type":"String"},{"name":"expiresAt","kind":"scalar","type":"DateTime"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"}],"dbName":"verification"},"Card":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"userId","kind":"scalar","type":"String"},{"name":"user","kind":"object","type":"User","relationName":"CardToUser"},{"name":"cardTitle","kind":"scalar","type":"String"},{"name":"cardColor","kind":"scalar","type":"String"},{"name":"logo","kind":"scalar","type":"String"},{"name":"profile","kind":"scalar","type":"String"},{"name":"cover","kind":"scalar","type":"String"},{"name":"imagesAndLayouts","kind":"scalar","type":"Json"},{"name":"isFavorite","kind":"scalar","type":"Boolean"},{"name":"personalInfo","kind":"object","type":"PersonalInfo","relationName":"CardToPersonalInfo"},{"name":"socialLinks","kind":"object","type":"socialLinks","relationName":"CardTosocialLinks"},{"name":"qrCode","kind":"scalar","type":"String"},{"name":"qrImage","kind":"scalar","type":"String"},{"name":"scan","kind":"object","type":"cardScan","relationName":"CardTocardScan"},{"name":"contacts","kind":"object","type":"Contact","relationName":"CardToContact"},{"name":"ownerCardShares","kind":"object","type":"VisitorContactShare","relationName":"OwnerCardShares"},{"name":"visitorCardShares","kind":"object","type":"VisitorContactShare","relationName":"VisitorCardShares"},{"name":"setting","kind":"scalar","type":"Json"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"}],"dbName":"cards"},"PersonalInfo":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"cardId","kind":"scalar","type":"String"},{"name":"card","kind":"object","type":"Card","relationName":"CardToPersonalInfo"},{"name":"firstName","kind":"scalar","type":"String"},{"name":"lastName","kind":"scalar","type":"String"},{"name":"jobTitle","kind":"scalar","type":"String"},{"name":"phoneNumber","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"company","kind":"scalar","type":"String"},{"name":"image","kind":"scalar","type":"String"},{"name":"logo","kind":"scalar","type":"String"},{"name":"note","kind":"scalar","type":"String"},{"name":"banner","kind":"scalar","type":"String"},{"name":"profile_img","kind":"scalar","type":"String"},{"name":"middleName","kind":"scalar","type":"String"},{"name":"prefix","kind":"scalar","type":"String"},{"name":"suffix","kind":"scalar","type":"String"},{"name":"pronoun","kind":"scalar","type":"String"},{"name":"preferred","kind":"scalar","type":"String"},{"name":"maidenName","kind":"scalar","type":"String"}],"dbName":"personal_info"},"socialLinks":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"cardId","kind":"scalar","type":"String"},{"name":"card","kind":"object","type":"Card","relationName":"CardTosocialLinks"},{"name":"links","kind":"scalar","type":"Json"}],"dbName":"social_links"},"cardScan":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"cardId","kind":"scalar","type":"String"},{"name":"card","kind":"object","type":"Card","relationName":"CardTocardScan"},{"name":"ip","kind":"scalar","type":"String"},{"name":"userAgent","kind":"scalar","type":"String"},{"name":"source","kind":"scalar","type":"String"},{"name":"latitude","kind":"scalar","type":"Float"},{"name":"longitude","kind":"scalar","type":"Float"},{"name":"city","kind":"scalar","type":"String"},{"name":"country","kind":"scalar","type":"String"},{"name":"street","kind":"scalar","type":"String"},{"name":"streetNumber","kind":"scalar","type":"String"},{"name":"district","kind":"scalar","type":"String"},{"name":"region","kind":"scalar","type":"String"},{"name":"subregion","kind":"scalar","type":"String"},{"name":"postalCode","kind":"scalar","type":"String"},{"name":"addressName","kind":"scalar","type":"String"},{"name":"formattedAddress","kind":"scalar","type":"String"},{"name":"isoCountryCode","kind":"scalar","type":"String"},{"name":"banner","kind":"scalar","type":"String"},{"name":"profile_img","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"}],"dbName":"card_scans"},"Contact":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"userId","kind":"scalar","type":"String"},{"name":"cardId","kind":"scalar","type":"String"},{"name":"firstName","kind":"scalar","type":"String"},{"name":"lastName","kind":"scalar","type":"String"},{"name":"phone","kind":"scalar","type":"String"},{"name":"email","kind":"scalar","type":"String"},{"name":"company","kind":"scalar","type":"String"},{"name":"jobTitle","kind":"scalar","type":"String"},{"name":"image","kind":"scalar","type":"String"},{"name":"logo","kind":"scalar","type":"String"},{"name":"banner","kind":"scalar","type":"String"},{"name":"note","kind":"scalar","type":"String"},{"name":"profile_img","kind":"scalar","type":"String"},{"name":"latitude","kind":"scalar","type":"Float"},{"name":"longitude","kind":"scalar","type":"Float"},{"name":"city","kind":"scalar","type":"String"},{"name":"country","kind":"scalar","type":"String"},{"name":"street","kind":"scalar","type":"String"},{"name":"streetNumber","kind":"scalar","type":"String"},{"name":"district","kind":"scalar","type":"String"},{"name":"region","kind":"scalar","type":"String"},{"name":"subregion","kind":"scalar","type":"String"},{"name":"postalCode","kind":"scalar","type":"String"},{"name":"addressName","kind":"scalar","type":"String"},{"name":"formattedAddress","kind":"scalar","type":"String"},{"name":"isoCountryCode","kind":"scalar","type":"String"},{"name":"user","kind":"object","type":"User","relationName":"ContactToUser"},{"name":"card","kind":"object","type":"Card","relationName":"CardToContact"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"}],"dbName":"contacts"},"VisitorContactShare":{"fields":[{"name":"id","kind":"scalar","type":"String"},{"name":"ownerCardId","kind":"scalar","type":"String"},{"name":"visitorCardId","kind":"scalar","type":"String"},{"name":"ownerId","kind":"scalar","type":"String"},{"name":"visitorId","kind":"scalar","type":"String"},{"name":"status","kind":"scalar","type":"String"},{"name":"latitude","kind":"scalar","type":"Float"},{"name":"longitude","kind":"scalar","type":"Float"},{"name":"city","kind":"scalar","type":"String"},{"name":"country","kind":"scalar","type":"String"},{"name":"street","kind":"scalar","type":"String"},{"name":"streetNumber","kind":"scalar","type":"String"},{"name":"district","kind":"scalar","type":"String"},{"name":"region","kind":"scalar","type":"String"},{"name":"subregion","kind":"scalar","type":"String"},{"name":"postalCode","kind":"scalar","type":"String"},{"name":"addressName","kind":"scalar","type":"String"},{"name":"formattedAddress","kind":"scalar","type":"String"},{"name":"isoCountryCode","kind":"scalar","type":"String"},{"name":"createdAt","kind":"scalar","type":"DateTime"},{"name":"updatedAt","kind":"scalar","type":"DateTime"},{"name":"ownerCard","kind":"object","type":"Card","relationName":"OwnerCardShares"},{"name":"visitorCard","kind":"object","type":"Card","relationName":"VisitorCardShares"},{"name":"owner","kind":"object","type":"User","relationName":"OwnerShares"},{"name":"visitor","kind":"object","type":"User","relationName":"VisitorShares"}],"dbName":"visitor_contact_shares"}},"enums":{},"types":{}}');
 async function decodeBase64AsWasm(wasmBase64) {
   const { Buffer: Buffer2 } = await import("buffer");
   const wasmArray = Buffer2.from(wasmBase64, "base64");
@@ -55,7 +55,6 @@ __export(prismaNamespace_exports, {
   AnyNull: () => AnyNull2,
   CardScalarFieldEnum: () => CardScalarFieldEnum,
   CardScanScalarFieldEnum: () => CardScanScalarFieldEnum,
-  ContactRequestScalarFieldEnum: () => ContactRequestScalarFieldEnum,
   ContactScalarFieldEnum: () => ContactScalarFieldEnum,
   DbNull: () => DbNull2,
   Decimal: () => Decimal2,
@@ -123,8 +122,7 @@ var ModelName = {
   socialLinks: "socialLinks",
   cardScan: "cardScan",
   Contact: "Contact",
-  VisitorContactShare: "VisitorContactShare",
-  ContactRequest: "ContactRequest"
+  VisitorContactShare: "VisitorContactShare"
 };
 var TransactionIsolationLevel = runtime2.makeStrictEnum({
   ReadUncommitted: "ReadUncommitted",
@@ -205,7 +203,13 @@ var PersonalInfoScalarFieldEnum = {
   logo: "logo",
   note: "note",
   banner: "banner",
-  profile_img: "profile_img"
+  profile_img: "profile_img",
+  middleName: "middleName",
+  prefix: "prefix",
+  suffix: "suffix",
+  pronoun: "pronoun",
+  preferred: "preferred",
+  maidenName: "maidenName"
 };
 var SocialLinksScalarFieldEnum = {
   id: "id",
@@ -222,6 +226,15 @@ var CardScanScalarFieldEnum = {
   longitude: "longitude",
   city: "city",
   country: "country",
+  street: "street",
+  streetNumber: "streetNumber",
+  district: "district",
+  region: "region",
+  subregion: "subregion",
+  postalCode: "postalCode",
+  addressName: "addressName",
+  formattedAddress: "formattedAddress",
+  isoCountryCode: "isoCountryCode",
   banner: "banner",
   profile_img: "profile_img",
   createdAt: "createdAt"
@@ -245,6 +258,15 @@ var ContactScalarFieldEnum = {
   longitude: "longitude",
   city: "city",
   country: "country",
+  street: "street",
+  streetNumber: "streetNumber",
+  district: "district",
+  region: "region",
+  subregion: "subregion",
+  postalCode: "postalCode",
+  addressName: "addressName",
+  formattedAddress: "formattedAddress",
+  isoCountryCode: "isoCountryCode",
   createdAt: "createdAt",
   updatedAt: "updatedAt"
 };
@@ -259,16 +281,15 @@ var VisitorContactShareScalarFieldEnum = {
   longitude: "longitude",
   city: "city",
   country: "country",
-  createdAt: "createdAt",
-  updatedAt: "updatedAt"
-};
-var ContactRequestScalarFieldEnum = {
-  id: "id",
-  cardId: "cardId",
-  requestedBy: "requestedBy",
-  requestedTo: "requestedTo",
-  status: "status",
-  message: "message",
+  street: "street",
+  streetNumber: "streetNumber",
+  district: "district",
+  region: "region",
+  subregion: "subregion",
+  postalCode: "postalCode",
+  addressName: "addressName",
+  formattedAddress: "formattedAddress",
+  isoCountryCode: "isoCountryCode",
   createdAt: "createdAt",
   updatedAt: "updatedAt"
 };
@@ -520,8 +541,8 @@ var formatPhoneNumber = (phone) => {
 };
 var VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID || "VAc66c779f03a7c204d05b7a429787deec";
 var sendOTPViaWhatsApp = async (phoneNumber2, otpCode, options) => {
-  const whatsappFromNumber = options?.from || process.env.TWILIO_WHATSAPP_NUMBER || "whatsapp:+14155238886";
-  const contentSid = options?.contentSid || process.env.TWILIO_WHATSAPP_OTP_CONTENT_SID || "HX229f5a04fd0510ce1b071852155d3e75";
+  const whatsappFromNumber = options?.from || process.env.TWILIO_WHATSAPP_NUMBER || "whatsapp:+15558678965";
+  const contentSid = options?.contentSid || process.env.TWILIO_WHATSAPP_OTP_CONTENT_SID || "HX9e03d7b01e72c48bb5c29161d3efc107";
   try {
     const client = getTwilioClient();
     if (!client) {
@@ -650,6 +671,15 @@ try {
     plugins: [
       phoneNumber({
         sendOTP: async ({ phoneNumber: phoneNumber2, code }, ctx) => {
+          const bypassCode = process.env.OTP_BYPASS_CODE;
+          if (bypassCode) {
+            logger.info("OTP bypass mode - skip Twilio. Use code for testing", {
+              phoneNumber: phoneNumber2,
+              bypassCode,
+              note: "Set OTP_BYPASS_CODE in env for testing without Twilio"
+            });
+            return;
+          }
           logger.info("Sending OTP (Better Auth generated) via WhatsApp only", { phoneNumber: phoneNumber2 });
           logger.debug("Better Auth OTP code", { codeLength: code?.length });
           const whatsappResult = await sendOTPViaWhatsApp(phoneNumber2, code);
@@ -668,7 +698,16 @@ try {
             throw new Error(whatsappResult.errorMessage || "Failed to send OTP via WhatsApp");
           }
         },
-        // verifyOTP not overridden → Better Auth verifies the code it stored (same code for SMS/WhatsApp)
+        // Only override verifyOTP when OTP_BYPASS_CODE is set - otherwise Better Auth uses default
+        ...process.env.OTP_BYPASS_CODE && {
+          verifyOTP: async ({ phoneNumber: phoneNumber2, code }) => {
+            if (code?.trim() === process.env.OTP_BYPASS_CODE) {
+              logger.info("OTP bypass accepted", { phoneNumber: phoneNumber2 });
+              return true;
+            }
+            return false;
+          }
+        },
         signUpOnVerification: {
           getTempEmail: (phone) => `${phone}@temp.yoursite.com`,
           getTempName: (phone) => `User_${phone}`
@@ -783,7 +822,13 @@ var createCard = async (userId, cardTitle, cardColor, logo, profile, cover, imag
             logo: personalInfo.logo ?? null,
             note: personalInfo.note ?? null,
             banner: personalInfo.banner ?? null,
-            profile_img: personalInfo.profile_img ?? null
+            profile_img: personalInfo.profile_img ?? null,
+            middleName: personalInfo.middleName ?? null,
+            prefix: personalInfo.prefix ?? null,
+            suffix: personalInfo.suffix ?? null,
+            pronoun: personalInfo.pronoun ?? null,
+            preferred: personalInfo.preferred ?? null,
+            maidenName: personalInfo.maidenName ?? null
           }
         }
       },
@@ -902,7 +947,13 @@ var updateCard = async (cardId, userId, payload) => {
               logo: payload.personalInfo.logo ?? null,
               note: payload.personalInfo.note ?? null,
               banner: payload.personalInfo.banner ?? null,
-              profile_img: payload.personalInfo.profile_img ?? null
+              profile_img: payload.personalInfo.profile_img ?? null,
+              middleName: payload.personalInfo.middleName ?? null,
+              prefix: payload.personalInfo.prefix ?? null,
+              suffix: payload.personalInfo.suffix ?? null,
+              pronoun: payload.personalInfo.pronoun ?? null,
+              preferred: payload.personalInfo.preferred ?? null,
+              maidenName: payload.personalInfo.maidenName ?? null
             },
             update: {
               ...payload.personalInfo.firstName !== void 0 && { firstName: payload.personalInfo.firstName },
@@ -915,7 +966,13 @@ var updateCard = async (cardId, userId, payload) => {
               ...payload.personalInfo.logo !== void 0 && { logo: payload.personalInfo.logo },
               ...payload.personalInfo.note !== void 0 && { note: payload.personalInfo.note },
               ...payload.personalInfo.banner !== void 0 && { banner: payload.personalInfo.banner },
-              ...payload.personalInfo.profile_img !== void 0 && { profile_img: payload.personalInfo.profile_img }
+              ...payload.personalInfo.profile_img !== void 0 && { profile_img: payload.personalInfo.profile_img },
+              ...payload.personalInfo.middleName !== void 0 && { middleName: payload.personalInfo.middleName },
+              ...payload.personalInfo.prefix !== void 0 && { prefix: payload.personalInfo.prefix },
+              ...payload.personalInfo.suffix !== void 0 && { suffix: payload.personalInfo.suffix },
+              ...payload.personalInfo.pronoun !== void 0 && { pronoun: payload.personalInfo.pronoun },
+              ...payload.personalInfo.preferred !== void 0 && { preferred: payload.personalInfo.preferred },
+              ...payload.personalInfo.maidenName !== void 0 && { maidenName: payload.personalInfo.maidenName }
             }
           }
         }
@@ -1986,25 +2043,6 @@ var saveContact = async (userId, cardId, data) => {
       country: data.country ?? ""
     }
   });
-  if (data.requestReversePermission && data.customerCardId) {
-    try {
-      const customerCardId = data.customerCardId;
-      const ownerPersonalInfo = await prisma.personalInfo.findUnique({
-        where: { cardId }
-      });
-      const ownerName = ownerPersonalInfo ? `${ownerPersonalInfo.firstName || ""} ${ownerPersonalInfo.lastName || ""}`.trim() || "Someone" : "Someone";
-      await createReverseContactRequest(
-        cardId,
-        // owner's card ID
-        customerCardId,
-        // customer's card ID
-        `${ownerName} wants to save your contact info`
-      );
-      logger.info("Reverse permission request created automatically");
-    } catch (error) {
-      logger.warn("Failed to create reverse permission request", error);
-    }
-  }
   return { alreadySaved: false, contact };
 };
 var getAllContacts = async (userId) => {
@@ -2074,317 +2112,6 @@ var deleteContact = async (contactId, userId) => {
     message: "Contact deleted successfully"
   };
 };
-var requestContactPermission = async (requesterId, cardId, message) => {
-  if (!requesterId) throw new Error("Unauthorized");
-  if (!cardId) throw new Error("cardId is required");
-  if (!prisma.contactRequest) {
-    throw new Error("ContactRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
-  }
-  const card = await prisma.card.findUnique({
-    where: { id: cardId },
-    select: {
-      id: true,
-      userId: true,
-      personalInfo: true
-    }
-  });
-  if (!card) throw new Error("Card not found");
-  if (card.userId === requesterId) {
-    throw new Error("You cannot request your own card");
-  }
-  const existingRequest = await prisma.contactRequest.findFirst({
-    where: {
-      requestedBy: requesterId,
-      cardId,
-      status: "pending"
-    }
-  });
-  if (existingRequest) {
-    throw new Error("Request already sent and pending");
-  }
-  const approvedRequest = await prisma.contactRequest.findFirst({
-    where: {
-      requestedBy: requesterId,
-      cardId,
-      status: "approved"
-    }
-  });
-  if (approvedRequest) {
-    const existingContact = await prisma.contact.findFirst({
-      where: {
-        userId: requesterId,
-        cardId
-      }
-    });
-    if (existingContact) {
-      throw new Error("Contact already saved");
-    }
-  }
-  const request = await prisma.contactRequest.create({
-    data: {
-      requestedBy: requesterId,
-      cardId,
-      requestedTo: card.userId,
-      message: message || null,
-      status: "pending"
-    },
-    include: {
-      requestedByUser: {
-        select: { id: true, name: true, email: true, image: true }
-      },
-      card: {
-        include: {
-          personalInfo: true
-        }
-      }
-    }
-  });
-  return request;
-};
-var getReceivedRequests = async (userId) => {
-  if (!userId) throw new Error("userId is required");
-  try {
-    if (!prisma.contactRequest) {
-      logger.warn("ContactRequest model not found, returning empty array");
-      return [];
-    }
-    const requests = await prisma.contactRequest.findMany({
-      where: {
-        requestedTo: userId,
-        status: "pending"
-      },
-      include: {
-        requestedByUser: {
-          select: { id: true, name: true, email: true, image: true }
-        },
-        card: {
-          include: {
-            personalInfo: true
-          }
-        }
-      },
-      orderBy: { createdAt: "desc" }
-    });
-    return requests || [];
-  } catch (error) {
-    logger.warn("Error fetching received requests, returning empty array", error);
-    return [];
-  }
-};
-var getSentRequests = async (userId) => {
-  if (!userId) throw new Error("userId is required");
-  try {
-    if (!prisma.contactRequest) {
-      logger.warn("ContactRequest model not found, returning empty array");
-      return [];
-    }
-    const requests = await prisma.contactRequest.findMany({
-      where: {
-        requestedBy: userId
-      },
-      include: {
-        card: {
-          include: {
-            personalInfo: true
-          }
-        },
-        requestedToUser: {
-          select: { id: true, name: true, email: true, image: true }
-        }
-      },
-      orderBy: { createdAt: "desc" }
-    });
-    return requests || [];
-  } catch (error) {
-    logger.warn("Error fetching sent requests, returning empty array", error);
-    return [];
-  }
-};
-var approveRequest = async (requestId, cardOwnerId) => {
-  if (!requestId) throw new Error("requestId is required");
-  if (!cardOwnerId) throw new Error("Unauthorized");
-  if (!prisma.contactRequest) {
-    throw new Error("ContactRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
-  }
-  const request = await prisma.contactRequest.findUnique({
-    where: { id: requestId },
-    include: {
-      card: {
-        include: {
-          personalInfo: true
-        }
-      }
-    }
-  });
-  if (!request) throw new Error("Request not found");
-  if (request.requestedTo !== cardOwnerId) {
-    throw new Error("Unauthorized - not your request");
-  }
-  if (request.status !== "pending") {
-    throw new Error(`Request already ${request.status}`);
-  }
-  await prisma.contactRequest.update({
-    where: { id: requestId },
-    data: { status: "approved" }
-  });
-  const personalInfo = request.card.personalInfo;
-  if (!personalInfo) {
-    throw new Error("Card personal info not found");
-  }
-  const existingContact = await prisma.contact.findFirst({
-    where: {
-      userId: request.requestedBy,
-      cardId: request.cardId
-    }
-  });
-  if (existingContact) {
-    return { contact: existingContact, alreadyExists: true };
-  }
-  let scanLocation = {
-    latitude: null,
-    longitude: null,
-    city: "",
-    country: ""
-  };
-  try {
-    const ownerCards = await prisma.card.findMany({
-      where: { userId: request.requestedBy },
-      select: { id: true }
-    });
-    if (ownerCards.length > 0) {
-      const ownerCardIds = ownerCards.map((card) => card.id);
-      const customerContact = await prisma.contact.findFirst({
-        where: {
-          userId: request.requestedTo,
-          // Customer's userId
-          cardId: { in: ownerCardIds }
-          // Owner's card ID
-        },
-        orderBy: { createdAt: "desc" }
-        // Get the most recent one
-      });
-      if (customerContact) {
-        scanLocation = {
-          latitude: customerContact.latitude,
-          longitude: customerContact.longitude,
-          city: customerContact.city || "",
-          country: customerContact.country || ""
-        };
-        logger.debug("Using scan location from customer contact", { scanLocation });
-      }
-    }
-  } catch (error) {
-    logger.warn("Could not get scan location from customer contact", error);
-  }
-  let normalizedEmail = "";
-  if (personalInfo.email) {
-    try {
-      normalizedEmail = normalizeEmail(personalInfo.email);
-    } catch (error) {
-      normalizedEmail = "";
-    }
-  }
-  const contact = await prisma.contact.create({
-    data: {
-      userId: request.requestedBy,
-      // Owner's ID (who requested)
-      cardId: request.cardId,
-      // Customer's card
-      firstName: personalInfo.firstName || "",
-      lastName: personalInfo.lastName || "",
-      phone: personalInfo.phoneNumber || "",
-      email: normalizedEmail,
-      company: personalInfo.company || "",
-      jobTitle: personalInfo.jobTitle || "",
-      logo: request.card.logo || "",
-      profile_img: request.card.profile || "",
-      // Use the same scan location from customer's contact
-      latitude: scanLocation.latitude,
-      longitude: scanLocation.longitude,
-      city: scanLocation.city,
-      country: scanLocation.country
-    }
-  });
-  return { contact, alreadyExists: false };
-};
-var rejectRequest = async (requestId, cardOwnerId) => {
-  if (!requestId) throw new Error("requestId is required");
-  if (!cardOwnerId) throw new Error("Unauthorized");
-  if (!prisma.contactRequest) {
-    throw new Error("ContactRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
-  }
-  const request = await prisma.contactRequest.findUnique({
-    where: { id: requestId }
-  });
-  if (!request) throw new Error("Request not found");
-  if (request.requestedTo !== cardOwnerId) {
-    throw new Error("Unauthorized - not your request");
-  }
-  if (request.status !== "pending") {
-    throw new Error(`Request already ${request.status}`);
-  }
-  const updated = await prisma.contactRequest.update({
-    where: { id: requestId },
-    data: { status: "rejected" }
-  });
-  return updated;
-};
-var createReverseContactRequest = async (ownerCardId, customerCardId, message) => {
-  if (!ownerCardId) throw new Error("Owner card ID is required");
-  if (!customerCardId) throw new Error("Customer card ID is required");
-  if (!prisma.contactRequest) {
-    throw new Error("ContactRequest model not found. Please run 'npx prisma generate' to regenerate Prisma client.");
-  }
-  const ownerCard = await prisma.card.findUnique({
-    where: { id: ownerCardId },
-    include: { personalInfo: true }
-  });
-  if (!ownerCard) throw new Error("Owner card not found");
-  const customerCard = await prisma.card.findUnique({
-    where: { id: customerCardId },
-    select: { id: true, userId: true }
-  });
-  if (!customerCard) throw new Error("Customer card not found");
-  if (ownerCard.userId === customerCard.userId) {
-    throw new Error("Cannot create reverse request for same user");
-  }
-  const existingRequest = await prisma.contactRequest.findFirst({
-    where: {
-      requestedBy: ownerCard.userId,
-      // Owner requesting
-      cardId: customerCardId,
-      // Customer's card
-      status: "pending"
-    }
-  });
-  if (existingRequest) {
-    return existingRequest;
-  }
-  const ownerName = ownerCard.personalInfo ? `${ownerCard.personalInfo.firstName || ""} ${ownerCard.personalInfo.lastName || ""}`.trim() || "Someone" : "Someone";
-  const request = await prisma.contactRequest.create({
-    data: {
-      requestedBy: ownerCard.userId,
-      // Owner's userId
-      cardId: customerCardId,
-      // Customer's card ID
-      requestedTo: customerCard.userId,
-      // Customer's userId
-      message: message || `${ownerName} wants to save your contact info`,
-      status: "pending"
-    },
-    include: {
-      requestedByUser: {
-        select: { id: true, name: true, email: true, image: true }
-      },
-      card: {
-        include: {
-          personalInfo: true
-        }
-      }
-    }
-  });
-  return request;
-};
 var shareVisitorContact = async (visitorId, ownerCardId, visitorCardId, scanLocation) => {
   if (!visitorId) throw new Error("Unauthorized");
   if (!ownerCardId) throw new Error("Owner card ID is required");
@@ -2401,7 +2128,6 @@ var shareVisitorContact = async (visitorId, ownerCardId, visitorCardId, scanLoca
   if (!visitorCard) throw new Error("Your card not found");
   if (visitorCard.userId !== visitorId) throw new Error("You can only share your own cards");
   const ownerId = ownerCard.userId;
-  if (ownerId === visitorId) throw new Error("You cannot share with yourself");
   const lat = scanLocation?.latitude ?? null;
   const lon = scanLocation?.longitude ?? null;
   const city = scanLocation?.city ?? "";
@@ -2468,12 +2194,6 @@ var contactServices = {
   getAllContacts,
   updateContact,
   deleteContact,
-  requestContactPermission,
-  getReceivedRequests,
-  getSentRequests,
-  approveRequest,
-  rejectRequest,
-  createReverseContactRequest,
   shareVisitorContact
 };
 
@@ -2624,160 +2344,6 @@ var deleteContactController = async (req, res, next) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
-var requestContactPermissionController = async (req, res, next) => {
-  try {
-    const requesterId = req.user?.id;
-    const { cardId } = req.params;
-    const { message } = req.body;
-    if (!requesterId) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-    if (!cardId) {
-      return res.status(400).json({ success: false, message: "Card ID is required" });
-    }
-    const request = await contactServices.requestContactPermission(requesterId, cardId, message);
-    res.status(201).json({
-      success: true,
-      message: "Contact request sent successfully",
-      data: request
-    });
-  } catch (error) {
-    logger.error("Request contact permission error", error);
-    if (!res.headersSent) {
-      return res.status(400).json({
-        success: false,
-        message: error.message || "Something went wrong"
-      });
-    }
-    next(error);
-  }
-};
-var getReceivedRequestsController = async (req, res, next) => {
-  try {
-    const userId = req.user?.id;
-    if (!userId) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-    const requests = await contactServices.getReceivedRequests(userId);
-    res.status(200).json({
-      success: true,
-      data: requests
-    });
-  } catch (error) {
-    logger.warn("Error in getReceivedRequestsController", error);
-    if (!res.headersSent) {
-      return res.status(200).json({
-        success: true,
-        data: []
-      });
-    }
-  }
-};
-var getSentRequestsController = async (req, res, next) => {
-  try {
-    const userId = req.user?.id;
-    if (!userId) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-    const requests = await contactServices.getSentRequests(userId);
-    res.status(200).json({
-      success: true,
-      data: requests
-    });
-  } catch (error) {
-    logger.warn("Error in getSentRequestsController", error);
-    if (!res.headersSent) {
-      return res.status(200).json({
-        success: true,
-        data: []
-      });
-    }
-  }
-};
-var approveRequestController = async (req, res, next) => {
-  try {
-    const cardOwnerId = req.user?.id;
-    const { requestId } = req.params;
-    if (!cardOwnerId) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-    if (!requestId) {
-      return res.status(400).json({ success: false, message: "Request ID is required" });
-    }
-    const result = await contactServices.approveRequest(requestId, cardOwnerId);
-    res.status(200).json({
-      success: true,
-      message: result.alreadyExists ? "Contact already exists" : "Request approved and contact saved",
-      data: result.contact
-    });
-  } catch (error) {
-    logger.error("Approve request error", error);
-    if (!res.headersSent) {
-      return res.status(400).json({
-        success: false,
-        message: error.message || "Something went wrong"
-      });
-    }
-    next(error);
-  }
-};
-var rejectRequestController = async (req, res, next) => {
-  try {
-    const cardOwnerId = req.user?.id;
-    const { requestId } = req.params;
-    if (!cardOwnerId) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-    if (!requestId) {
-      return res.status(400).json({ success: false, message: "Request ID is required" });
-    }
-    const request = await contactServices.rejectRequest(requestId, cardOwnerId);
-    res.status(200).json({
-      success: true,
-      message: "Request rejected",
-      data: request
-    });
-  } catch (error) {
-    logger.error("Reject request error", error);
-    if (!res.headersSent) {
-      return res.status(400).json({
-        success: false,
-        message: error.message || "Something went wrong"
-      });
-    }
-    next(error);
-  }
-};
-var createReversePermissionRequestController = async (req, res, next) => {
-  try {
-    const { ownerCardId, customerCardId, message } = req.body;
-    if (!ownerCardId) {
-      return res.status(400).json({ success: false, message: "Owner card ID is required" });
-    }
-    if (!customerCardId) {
-      return res.status(400).json({ success: false, message: "Customer card ID is required" });
-    }
-    const request = await contactServices.createReverseContactRequest(
-      ownerCardId,
-      customerCardId,
-      message
-    );
-    res.status(201).json({
-      success: true,
-      message: "Reverse permission request created successfully",
-      data: request
-    });
-  } catch (error) {
-    logger.error("Create reverse permission request error", error);
-    if (!res.headersSent) {
-      return res.status(400).json({
-        success: false,
-        message: error.message || "Something went wrong"
-      });
-    }
-    next(error);
-  }
-};
 var shareVisitorContactController = async (req, res, next) => {
   try {
     const visitorId = req.user?.id;
@@ -2819,12 +2385,6 @@ var contactController = {
   getAllContactsController,
   updateContactController,
   deleteContactController,
-  requestContactPermissionController,
-  getReceivedRequestsController,
-  getSentRequestsController,
-  approveRequestController,
-  rejectRequestController,
-  createReversePermissionRequestController,
   shareVisitorContactController
 };
 
@@ -2834,12 +2394,6 @@ router4.post("/save/:cardId", contactController.saveContactController);
 router4.get("/all", contactController.getAllContactsController);
 router4.put("/update/:contactId", contactController.updateContactController);
 router4.delete("/delete/:contactId", contactController.deleteContactController);
-router4.post("/request/:cardId", contactController.requestContactPermissionController);
-router4.get("/requests/received", contactController.getReceivedRequestsController);
-router4.get("/requests/sent", contactController.getSentRequestsController);
-router4.post("/requests/:requestId/approve", contactController.approveRequestController);
-router4.post("/requests/:requestId/reject", contactController.rejectRequestController);
-router4.post("/request-reverse", contactController.createReversePermissionRequestController);
 router4.post("/visitor/share-contact", contactController.shareVisitorContactController);
 var contactRoutes = router4;
 

@@ -106,6 +106,16 @@ try {
     plugins: [
         phoneNumber({
             sendOTP: async ({ phoneNumber, code }, ctx) => {
+                const bypassCode = process.env.OTP_BYPASS_CODE;
+                if (bypassCode) {
+                    logger.info("OTP bypass mode - skip Twilio. Use code for testing", {
+                        phoneNumber,
+                        bypassCode,
+                        note: "Set OTP_BYPASS_CODE in env for testing without Twilio"
+                    });
+                    return; // No SMS/WhatsApp sent - verification will accept bypass code
+                }
+
                 logger.info("Sending OTP (Better Auth generated) via WhatsApp only", { phoneNumber });
                 logger.debug("Better Auth OTP code", { codeLength: code?.length });
                 
@@ -126,7 +136,16 @@ try {
                     throw new Error(whatsappResult.errorMessage || "Failed to send OTP via WhatsApp");
                 }
             },
-            // verifyOTP not overridden → Better Auth verifies the code it stored (same code for SMS/WhatsApp)
+            // Only override verifyOTP when OTP_BYPASS_CODE is set - otherwise Better Auth uses default
+            ...(process.env.OTP_BYPASS_CODE && {
+                verifyOTP: async ({ phoneNumber, code }) => {
+                    if (code?.trim() === process.env.OTP_BYPASS_CODE) {
+                        logger.info("OTP bypass accepted", { phoneNumber });
+                        return true;
+                    }
+                    return false;
+                },
+            }),
             signUpOnVerification: {
                 getTempEmail: (phone) => `${phone}@temp.yoursite.com`,
                 getTempName: (phone) => `User_${phone}`

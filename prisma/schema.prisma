@@ -20,8 +20,6 @@ model User {
   contacts      Contact[]
   ownerShares      VisitorContactShare[] @relation("OwnerShares")
   visitorShares    VisitorContactShare[] @relation("VisitorShares")
-  sentRequests     ContactRequest[]      @relation("SentRequests")
-  receivedRequests ContactRequest[]      @relation("ReceivedRequests")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -101,7 +99,6 @@ model Card {
   qrImage          String?
   scan             cardScan[]
   contacts         Contact[]
-  contactRequests   ContactRequest[]
   ownerCardShares   VisitorContactShare[] @relation("OwnerCardShares")
   visitorCardShares VisitorContactShare[] @relation("VisitorCardShares")
   setting          Json?
@@ -120,7 +117,7 @@ model PersonalInfo {
   firstName   String?
   lastName    String?
   jobTitle    String?
-  phoneNumber String  @unique
+  phoneNumber String? @unique
   email       String? @unique
   company     String?
   image       String?
@@ -128,6 +125,12 @@ model PersonalInfo {
   note        String?
   banner      String?
   profile_img String?
+  middleName  String?
+  prefix      String?
+  suffix      String?
+  pronoun     String?
+  preferred   String?
+  maidenName  String?
 
   @@index([cardId])
   @@map("personal_info")
@@ -144,18 +147,27 @@ model socialLinks {
 }
 
 model cardScan {
-  id          String  @id @default(cuid())
-  cardId      String
-  card        Card    @relation(fields: [cardId], references: [id], onDelete: Cascade)
-  ip          String?
-  userAgent   String?
-  source      String  @default("qr") // "qr" | "link"
-  latitude    Float?
-  longitude   Float?
-  city        String?
-  country     String?
-  banner      String?
-  profile_img String?
+  id               String  @id @default(cuid())
+  cardId           String
+  card             Card    @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  ip               String?
+  userAgent        String?
+  source           String  @default("qr") // "qr" | "link"
+  latitude         Float?
+  longitude        Float?
+  city             String?
+  country          String?
+  street           String?
+  streetNumber     String?
+  district         String?
+  region           String?
+  subregion        String?
+  postalCode       String?
+  addressName      String? // village / place name
+  formattedAddress String?
+  isoCountryCode   String?
+  banner           String?
+  profile_img      String?
 
   createdAt DateTime @default(now())
 
@@ -164,27 +176,36 @@ model cardScan {
 }
 
 model Contact {
-  id          String   @id @default(uuid())
-  userId      String
-  cardId      String
-  firstName   String
-  lastName    String
-  phone       String
-  email       String?
-  company     String?
-  jobTitle    String?
-  image       String?
-  logo        String?
-  banner      String?
-  note        String?
-  profile_img String?
-  latitude    Float?
-  longitude   Float?
-  city        String?
-  country     String?
+  id               String   @id @default(uuid())
+  userId           String
+  cardId           String?
+  firstName        String?
+  lastName         String?
+  phone            String?
+  email            String?
+  company          String?
+  jobTitle         String?
+  image            String?
+  logo             String?
+  banner           String?
+  note             String?
+  profile_img      String?
+  latitude         Float?
+  longitude        Float?
+  city             String?
+  country          String?
+  street           String?
+  streetNumber     String?
+  district         String?
+  region           String?
+  subregion        String?
+  postalCode       String?
+  addressName      String? // village / place name
+  formattedAddress String?
+  isoCountryCode   String?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card Card? @relation(fields: [cardId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -195,18 +216,27 @@ model Contact {
 }
 
 model VisitorContactShare {
-  id            String   @id @default(uuid())
-  ownerCardId   String
-  visitorCardId String
-  ownerId       String
-  visitorId     String
-  status        String   @default("pending_owner_approval") // "pending_owner_approval" | "approved" | "rejected"
-  latitude      Float?
-  longitude     Float?
-  city          String?
-  country       String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id               String   @id @default(uuid())
+  ownerCardId      String
+  visitorCardId    String
+  ownerId          String
+  visitorId        String
+  status           String   @default("pending_owner_approval") // "pending_owner_approval" | "approved" | "rejected"
+  latitude         Float?
+  longitude        Float?
+  city             String?
+  country          String?
+  street           String?
+  streetNumber     String?
+  district         String?
+  region           String?
+  subregion        String?
+  postalCode       String?
+  addressName      String?
+  formattedAddress String?
+  isoCountryCode   String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   // Relations
   ownerCard   Card @relation("OwnerCardShares", fields: [ownerCardId], references: [id], onDelete: Cascade)
@@ -220,26 +250,4 @@ model VisitorContactShare {
   @@index([visitorCardId])
   @@index([status])
   @@map("visitor_contact_shares")
-}
-
-model ContactRequest {
-  id          String   @id @default(uuid())
-  cardId      String
-  requestedBy String
-  requestedTo String
-  status      String   @default("pending") // "pending" | "approved" | "rejected"
-  message     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  card            Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
-  requestedByUser User @relation("SentRequests", fields: [requestedBy], references: [id])
-  requestedToUser User @relation("ReceivedRequests", fields: [requestedTo], references: [id])
-
-  @@index([requestedBy])
-  @@index([requestedTo])
-  @@index([cardId])
-  @@index([status])
-  @@map("contact_requests")
 }
