@@ -197,6 +197,73 @@ const deleteContactController = async (req: Request, res: Response, next: NextFu
   }
 };
 
+// Create contact without cardId (manual / paper card / etc.)
+const createContactController = async (req: Request, res: Response, next: any) => {
+    try {
+        const userId = req.user?.id as string | undefined;
+        let contactData = req.body as {
+            firstName?: string;
+            lastName?: string;
+            phone?: string;
+            email?: string;
+            company?: string;
+            jobTitle?: string;
+            note?: string;
+            whereMet?: string;
+            city?: string | null;
+            country?: string | null;
+            latitude?: number | null;
+            longitude?: number | null;
+        };
+
+        if (!userId) {
+            return res.status(401).json({ success: false, message: "Unauthorized" });
+        }
+
+        if (!contactData || typeof contactData !== "object") {
+            return res.status(400).json({ success: false, message: "Invalid request body" });
+        }
+
+        const ip = getClientIP(req);
+        const hasLocation = !!(contactData.city || contactData.country || contactData.latitude != null || contactData.longitude != null);
+
+        if (!hasLocation && ip) {
+            const ipLocation = await getLocationFromIP(ip, req);
+            if (ipLocation) {
+                contactData = {
+                    ...contactData,
+                    latitude: contactData.latitude ?? ipLocation.latitude ?? null,
+                    longitude: contactData.longitude ?? ipLocation.longitude ?? null,
+                    city: contactData.city ?? ipLocation.city ?? null,
+                    country: contactData.country ?? ipLocation.country ?? null,
+                };
+            }
+        }
+        if (!contactData.city && !contactData.country && (contactData.latitude == null || contactData.longitude == null)) {
+            const fallback = getFallbackLocation();
+            contactData.city = contactData.city ?? fallback.city ?? null;
+            contactData.country = contactData.country ?? fallback.country ?? null;
+        }
+
+        const contact = await contactServices.createContact(userId, contactData);
+
+        return res.status(201).json({
+            success: true,
+            message: "Contact created successfully",
+            data: contact,
+        });
+    } catch (error: any) {
+        logger.error("Create contact error", error);
+        if (!res.headersSent) {
+            return res.status(400).json({
+                success: false,
+                message: error.message || "Failed to create contact",
+            });
+        }
+        next(error);
+    }
+};
+
 // Visitor shares their card with owner (scanned person) - auto-saves on owner's account
 const shareVisitorContactController = async (req: Request, res: Response, next: any) => {
     try {
@@ -244,6 +311,7 @@ const shareVisitorContactController = async (req: Request, res: Response, next: 
 
 export const contactController = { 
     saveContactController, 
+    createContactController,
     getAllContactsController, 
     updateContactController, 
     deleteContactController,

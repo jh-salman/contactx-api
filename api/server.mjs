@@ -2045,6 +2045,44 @@ var saveContact = async (userId, cardId, data) => {
   });
   return { alreadySaved: false, contact };
 };
+var createContact = async (userId, data) => {
+  if (!userId) throw new Error("Unauthorized");
+  const hasName = !!(data.firstName?.trim() || data.lastName?.trim());
+  if (!hasName) throw new Error("First name or last name is required");
+  let normalizedEmail = "";
+  if (data.email !== void 0 && data.email?.trim()) {
+    try {
+      normalizedEmail = normalizeEmail(data.email);
+    } catch (error) {
+      if (!data.phone?.trim()) throw error;
+      normalizedEmail = "";
+    }
+  }
+  const hasIdentifier = !!(data.phone?.trim() || normalizedEmail);
+  if (!hasIdentifier) throw new Error("Phone or email is required");
+  const noteText = data.whereMet?.trim() ? data.note?.trim() ? `Met at: ${data.whereMet.trim()}
+
+${data.note.trim()}` : `Met at: ${data.whereMet.trim()}` : data.note?.trim() ?? "";
+  const contact = await prisma.contact.create({
+    data: {
+      userId,
+      cardId: null,
+      firstName: data.firstName?.trim() ?? "",
+      lastName: data.lastName?.trim() ?? "",
+      phone: data.phone?.trim() ?? "",
+      email: normalizedEmail,
+      company: data.company?.trim() ?? "",
+      jobTitle: data.jobTitle?.trim() ?? "",
+      note: noteText,
+      profile_img: data.profile_img ?? "",
+      latitude: data.latitude ?? null,
+      longitude: data.longitude ?? null,
+      city: data.city ?? null,
+      country: data.country ?? null
+    }
+  });
+  return contact;
+};
 var getAllContacts = async (userId) => {
   if (!userId) throw new Error("userId is required");
   try {
@@ -2191,6 +2229,7 @@ var shareVisitorContact = async (visitorId, ownerCardId, visitorCardId, scanLoca
 };
 var contactServices = {
   saveContact,
+  createContact,
   getAllContacts,
   updateContact,
   deleteContact,
@@ -2344,6 +2383,52 @@ var deleteContactController = async (req, res, next) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
+var createContactController = async (req, res, next) => {
+  try {
+    const userId = req.user?.id;
+    let contactData = req.body;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    if (!contactData || typeof contactData !== "object") {
+      return res.status(400).json({ success: false, message: "Invalid request body" });
+    }
+    const ip = getClientIP(req);
+    const hasLocation = !!(contactData.city || contactData.country || contactData.latitude != null || contactData.longitude != null);
+    if (!hasLocation && ip) {
+      const ipLocation = await getLocationFromIP(ip, req);
+      if (ipLocation) {
+        contactData = {
+          ...contactData,
+          latitude: contactData.latitude ?? ipLocation.latitude ?? null,
+          longitude: contactData.longitude ?? ipLocation.longitude ?? null,
+          city: contactData.city ?? ipLocation.city ?? null,
+          country: contactData.country ?? ipLocation.country ?? null
+        };
+      }
+    }
+    if (!contactData.city && !contactData.country && (contactData.latitude == null || contactData.longitude == null)) {
+      const fallback = getFallbackLocation();
+      contactData.city = contactData.city ?? fallback.city ?? null;
+      contactData.country = contactData.country ?? fallback.country ?? null;
+    }
+    const contact = await contactServices.createContact(userId, contactData);
+    return res.status(201).json({
+      success: true,
+      message: "Contact created successfully",
+      data: contact
+    });
+  } catch (error) {
+    logger.error("Create contact error", error);
+    if (!res.headersSent) {
+      return res.status(400).json({
+        success: false,
+        message: error.message || "Failed to create contact"
+      });
+    }
+    next(error);
+  }
+};
 var shareVisitorContactController = async (req, res, next) => {
   try {
     const visitorId = req.user?.id;
@@ -2382,6 +2467,7 @@ var shareVisitorContactController = async (req, res, next) => {
 };
 var contactController = {
   saveContactController,
+  createContactController,
   getAllContactsController,
   updateContactController,
   deleteContactController,
@@ -2390,6 +2476,7 @@ var contactController = {
 
 // src/modules/contacts/contacts.routes.ts
 var router4 = Router4();
+router4.post("/create", contactController.createContactController);
 router4.post("/save/:cardId", contactController.saveContactController);
 router4.get("/all", contactController.getAllContactsController);
 router4.put("/update/:contactId", contactController.updateContactController);

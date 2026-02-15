@@ -112,6 +112,68 @@ const saveContact = async (
     return { alreadySaved: false, contact };
 };
 
+// Create contact without cardId (manual / paper card / etc.)
+const createContact = async (
+    userId: string,
+    data: {
+        firstName?: string;
+        lastName?: string;
+        phone?: string;
+        email?: string;
+        company?: string;
+        jobTitle?: string;
+        note?: string;
+        whereMet?: string;
+        profile_img?: string;
+        latitude?: number | null;
+        longitude?: number | null;
+        city?: string | null;
+        country?: string | null;
+    }
+) => {
+    if (!userId) throw new Error("Unauthorized");
+
+    const hasName = !!(data.firstName?.trim() || data.lastName?.trim());
+    if (!hasName) throw new Error("First name or last name is required");
+
+    let normalizedEmail = "";
+    if (data.email !== undefined && data.email?.trim()) {
+        try {
+            normalizedEmail = normalizeEmail(data.email);
+        } catch (error: any) {
+            if (!data.phone?.trim()) throw error;
+            normalizedEmail = "";
+        }
+    }
+    const hasIdentifier = !!(data.phone?.trim() || normalizedEmail);
+    if (!hasIdentifier) throw new Error("Phone or email is required");
+
+    const noteText = data.whereMet?.trim()
+        ? (data.note?.trim() ? `Met at: ${data.whereMet.trim()}\n\n${data.note.trim()}` : `Met at: ${data.whereMet.trim()}`)
+        : (data.note?.trim() ?? "");
+
+    const contact = await prisma.contact.create({
+        data: {
+            userId,
+            cardId: null,
+            firstName: data.firstName?.trim() ?? "",
+            lastName: data.lastName?.trim() ?? "",
+            phone: data.phone?.trim() ?? "",
+            email: normalizedEmail,
+            company: data.company?.trim() ?? "",
+            jobTitle: data.jobTitle?.trim() ?? "",
+            note: noteText,
+            profile_img: data.profile_img ?? "",
+            latitude: data.latitude ?? null,
+            longitude: data.longitude ?? null,
+            city: data.city ?? null,
+            country: data.country ?? null,
+        },
+    });
+
+    return contact;
+};
+
 // Get all contacts
 export const getAllContacts = async (userId: string) => {
     if (!userId) throw new Error("userId is required");
@@ -323,6 +385,7 @@ const shareVisitorContact = async (
 
 export const contactServices = {
     saveContact,
+    createContact,
     getAllContacts,
     updateContact,
     deleteContact,

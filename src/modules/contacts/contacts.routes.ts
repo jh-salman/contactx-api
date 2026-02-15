@@ -3,7 +3,10 @@ import { contactController } from "./contacts.controller";
 
 const router = Router();
 
-// ✅ Step 2: Visitor saves Owner's contact (NO permission needed)
+// Create contact without cardId (manual / paper card / etc.)
+router.post("/create", contactController.createContactController);
+
+// Visitor saves Owner's contact from scan (cardId required)
 router.post("/save/:cardId", contactController.saveContactController);
 
 // Existing contact CRUD routes
