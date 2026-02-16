@@ -210,6 +210,7 @@ export const updateContact = async (
         longitude?: number;
         city?: string;
         country?: string;
+        tags?: string[];
     }>
 ) => {
     const existing = await prisma.contact.findFirst({
@@ -252,6 +253,14 @@ export const updateContact = async (
     if (data.longitude !== undefined) updateData.longitude = data.longitude;
     if (data.city !== undefined) updateData.city = data.city;
     if (data.country !== undefined) updateData.country = data.country;
+
+    // Handle tags - array of strings
+    if (data.tags !== undefined) {
+        if (!Array.isArray(data.tags) || !data.tags.every((t) => typeof t === 'string')) {
+            throw new Error("tags must be an array of strings");
+        }
+        updateData.tags = data.tags;
+    }
 
     return prisma.contact.update({
         where: { id: contactId },
@@ -345,6 +354,19 @@ const shareVisitorContact = async (
         },
     });
     if (existingShare) {
+        // Ensure contact exists on owner's account (may be missing if creation failed previously)
+        const existingContact = await prisma.contact.findFirst({
+            where: { userId: ownerId, cardId: visitorCardId },
+        });
+        if (!existingContact) {
+            await prisma.contact.create({
+                data: {
+                    userId: ownerId,
+                    cardId: visitorCardId,
+                    ...contactData,
+                },
+            });
+        }
         return { alreadySaved: true, share: existingShare };
     }
 

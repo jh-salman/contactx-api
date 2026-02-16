@@ -210,6 +210,7 @@ const createContactController = async (req: Request, res: Response, next: any) =
             jobTitle?: string;
             note?: string;
             whereMet?: string;
+            profile_img?: string;
             city?: string | null;
             country?: string | null;
             latitude?: number | null;

@@ -2126,6 +2126,12 @@ var updateContact = async (contactId, userId, data) => {
   if (data.longitude !== void 0) updateData.longitude = data.longitude;
   if (data.city !== void 0) updateData.city = data.city;
   if (data.country !== void 0) updateData.country = data.country;
+  if (data.tags !== void 0) {
+    if (!Array.isArray(data.tags) || !data.tags.every((t) => typeof t === "string")) {
+      throw new Error("tags must be an array of strings");
+    }
+    updateData.tags = data.tags;
+  }
   return prisma.contact.update({
     where: { id: contactId },
     data: updateData
@@ -2193,6 +2199,18 @@ var shareVisitorContact = async (visitorId, ownerCardId, visitorCardId, scanLoca
     }
   });
   if (existingShare) {
+    const existingContact2 = await prisma.contact.findFirst({
+      where: { userId: ownerId, cardId: visitorCardId }
+    });
+    if (!existingContact2) {
+      await prisma.contact.create({
+        data: {
+          userId: ownerId,
+          cardId: visitorCardId,
+          ...contactData
+        }
+      });
+    }
     return { alreadySaved: true, share: existingShare };
   }
   const share = await prisma.visitorContactShare.create({

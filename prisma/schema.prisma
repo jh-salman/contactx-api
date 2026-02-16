@@ -203,6 +203,7 @@ model Contact {
   addressName      String? // village / place name
   formattedAddress String?
   isoCountryCode   String?
+  tags             Json?   // string[] e.g. ["Work", "Friend"]
 
   user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   card Card? @relation(fields: [cardId], references: [id], onDelete: Cascade)
